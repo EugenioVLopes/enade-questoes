@@ -22,3 +22,11 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# Builds e caches de ferramentas
+frontend/dist/
+.ruff_cache/
+.pytest_cache/
+*.tsbuildinfo
+coverage/
+.coverage
