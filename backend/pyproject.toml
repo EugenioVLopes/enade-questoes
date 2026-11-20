@@ -1,0 +1,98 @@
+[project]
+name = "enade-questoes-backend"
+version = "0.1.0"
+description = "Backend FastAPI em arquitetura hexagonal para o Enade Questões"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "alembic>=1.14",
+    "fastapi>=0.115",
+    "psycopg[binary]>=3.2",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "sqlalchemy>=2.0",
+    "uvicorn[standard]>=0.34",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/domain", "src/application", "src/infrastructure", "src/presentation"]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "import-linter>=2.1",
+    "pytest>=8.3",
+    "ruff>=0.9",
+]
+
+[tool.ruff]
+target-version = "py313"
+src = [".", "src"]
+line-length = 120
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "S", "UP"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
+testpaths = ["tests"]
+
+[tool.importlinter]
+root_packages = ["domain", "application", "infrastructure", "presentation"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Camadas hexagonais"
+type = "layers"
+layers = [
+    "presentation | infrastructure",
+    "application",
+    "domain",
+]
+ignore_imports = [
+    "presentation.main -> infrastructure.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "Isolamento do dominio"
+type = "forbidden"
+source_modules = ["domain"]
+forbidden_modules = [
+    "application",
+    "infrastructure",
+    "presentation",
+    "fastapi",
+    "sqlalchemy",
+    "docling",
+    "pdfplumber",
+    "openai",
+    "pydantic",
+    "pydantic_settings",
+    "httpx",
+]
+
+[[tool.importlinter.contracts]]
+name = "Isolamento da aplicacao"
+type = "forbidden"
+source_modules = ["application"]
+forbidden_modules = [
+    "infrastructure",
+    "presentation",
+    "fastapi",
+    "sqlalchemy",
+    "docling",
+    "pdfplumber",
+    "openai",
+]
