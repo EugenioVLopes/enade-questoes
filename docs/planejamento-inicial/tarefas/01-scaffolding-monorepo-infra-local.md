@@ -1,6 +1,6 @@
 # 01 — Scaffolding do monorepo, infraestrutura local e healthcheck
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Explicação: [explicacao.md](../explicacao.md) · Decisão: [arquitetura e simplificação da stack](../decisoes/08-arquitetura-e-simplificacao-stack.md)
 
@@ -33,12 +33,12 @@ Nenhuma.
 
 ## Critérios de aceite
 
-- [ ] `docker compose up -d postgres` sobe o PostgreSQL 16 com healthcheck saudável.
-- [ ] `backend/` possui as 4 camadas (`domain`, `application`, `infrastructure`, `presentation`) e `import-linter` valida o isolamento de `src/domain/` com exit code `0`.
-- [ ] `GET /api/v1/health` responde `200 OK` indicando conectividade com PostgreSQL e estado do worker local (coberto por teste automatizado).
-- [ ] `frontend/` compila (`pnpm build`), passa no type-check (`pnpm type-check`) e executa ao menos 1 teste smoke no Vitest.
-- [ ] `make types` gera o arquivo de tipos TypeScript em `frontend/src/api/` a partir do OpenAPI exportado pelo FastAPI sem erro.
-- [ ] `make lint` e `make test` passam integralmente.
+- [x] `docker compose up -d postgres` sobe o PostgreSQL 16 com healthcheck saudável.
+- [x] `backend/` possui as 4 camadas (`domain`, `application`, `infrastructure`, `presentation`) e `import-linter` valida o isolamento de `src/domain/` com exit code `0`.
+- [x] `GET /api/v1/health` responde `200 OK` indicando conectividade com PostgreSQL e estado do worker local (coberto por teste automatizado).
+- [x] `frontend/` compila (`pnpm build`), passa no type-check (`pnpm type-check`) e executa ao menos 1 teste smoke no Vitest.
+- [x] `make types` gera o arquivo de tipos TypeScript em `frontend/src/api/` a partir do OpenAPI exportado pelo FastAPI sem erro.
+- [x] `make lint` e `make test` passam integralmente.
 
 ## Verificação
 
@@ -49,4 +49,21 @@ Nenhuma.
 
 ## Evidências e pendências
 
-Pendente de execução.
+- **Banco e migrations**:
+  - `make db-up && docker compose ps` → container `enade-questoes-postgres-1` (`postgres:16-alpine`) ativo em `127.0.0.1:5432->5432/tcp` com status `Up ... (healthy)`.
+  - `make migrate` (`cd backend && uv run alembic upgrade head`) → executado com exit code `0`; `backend/alembic/versions/` permanece sem migrations de tabelas (apenas `alembic_version` no banco).
+- **Backend**:
+  - `cd backend && uv run python --version` → `Python 3.13.15`.
+  - `cd backend && uv run lint-imports` → exit code `0` (`Contracts: 3 kept, 0 broken`: `Camadas hexagonais`, `Isolamento do dominio`, `Isolamento da aplicacao`).
+  - `cd backend && uv run ruff check . && uv run ruff format --check .` → `All checks passed!`, `23 files already formatted`.
+  - `cd backend && uv run pytest` → `8 passed` (`tests/unit/test_settings.py`, `tests/unit/test_health.py`, `tests/integration/test_health_postgres.py` validando `GET /api/v1/health` → `200 OK` com PostgreSQL real e worker `ocioso`).
+- **Geração de tipos e Frontend**:
+  - `make types` → exporta o schema OpenAPI offline via `presentation.openapi_export` e gera `frontend/src/api/schema.d.ts` via `openapi-typescript` (`7.13.0`), removendo o JSON temporário em seguida.
+  - `cd frontend && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm type-check` (`tsc -b`) → exit code `0`.
+  - `cd frontend && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm lint` (`eslint .`) → exit code `0` (0 erros, 0 avisos).
+  - `cd frontend && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm test` (`vitest run`) → `1 passed` (`src/app/App.test.tsx`).
+  - `cd frontend && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm build` (`tsc -b && vite build`) → exit code `0` (`dist/` gerado em `frontend/dist/`).
+- **Alvos agregados da raiz e higiene Git**:
+  - `make lint` e `make test` → exit code `0`.
+  - `git status` → alterações mantidas na *working tree* (sem `git commit` ou `git push`), sem rastreamento de `.env`, `data/` ou artefatos de IA/MCP.
+- **Pendências**: nenhuma na Tarefa 01.
