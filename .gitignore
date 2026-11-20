@@ -1,0 +1,24 @@
+# Dados locais e PDFs oficiais do ENADE (não versionados)
+data/
+
+# Artefatos locais de MCP e ferramentas de IA (ver AGENTS.md)
+.cbmignore
+.codebase-memory/
+.codebase-memory.json
+.serena/
+.slim/
+.opencode/
+.codex/
+.claude/
+.gemini/
+.pi/
+.agents/
+
+# Ambiente Python / Node
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.env
+.env.*
+!.env.example

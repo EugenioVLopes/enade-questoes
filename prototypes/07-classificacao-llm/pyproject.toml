@@ -1,0 +1,12 @@
+# PROTOTYPE (descartável) — Ticket 07: Classificação multimodal, perfis versionados e travas determinísticas
+[project]
+name = "prototype-07-classificacao-llm"
+version = "0.0.1"
+description = "Protótipo descartável para validar contrato estruturado, classificação multimodal, perfis versionados e reclassificação em questões reais do ENADE 2023"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "openai>=1.68.0",
+    "pydantic>=2.10.0",
+    "python-dotenv>=1.0.1",
+    "pillow>=11.0.0",
+]
