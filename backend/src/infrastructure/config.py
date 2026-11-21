@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 RAIZ = Path(__file__).resolve().parents[3]
+PISO_MAX_TOKENS_LLM = 4096
 
 
 class Settings(BaseSettings):
@@ -31,8 +34,21 @@ class Settings(BaseSettings):
     llm_model: str = "gemini-2.5-flash-lite"
     llm_max_rpm: int = 10
     llm_timeout_s: int = 60
+    llm_max_tokens: int = PISO_MAX_TOKENS_LLM
 
     raiz: Path = RAIZ
+
+    @field_validator("llm_max_tokens", mode="before")
+    @classmethod
+    def _validar_piso_max_tokens(cls, valor: Any) -> int:
+        if isinstance(valor, bool):
+            raise ValueError("'llm_max_tokens' deve ser inteiro >= 4096.")
+        coerced = int(valor)
+        return max(PISO_MAX_TOKENS_LLM, coerced)
+
+    @property
+    def effective_llm_api_key(self) -> str:
+        return self.llm_api_key.strip() or self.gemini_api_key.strip()
 
     @property
     def resolved_data_dir(self) -> Path:

@@ -8,6 +8,7 @@ dependencies = [
     "docling==2.151.1",
     "fastapi>=0.115",
     "onnxruntime>=1.20",
+    "openai>=1.68.0",
     "pdfplumber>=0.11.10",
     "pillow>=13.0.0",
     "psycopg[binary]>=3.2",

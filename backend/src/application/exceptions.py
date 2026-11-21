@@ -32,3 +32,11 @@ class ConflitoEstadoIngestaoError(ErroAplicacao):
 
 class ArquivoPdfAusenteError(ErroAplicacao):
     """Arquivo PDF obrigatório ausente no armazenamento local."""
+
+
+class AtivoVisualAusenteError(ErroAplicacao):
+    """Arquivo de imagem de AtivoVisual referenciado pela questão está ausente."""
+
+
+class ErroClassificadorLLMError(ErroAplicacao):
+    """Falha técnica/protocolar ao consultar o classificador multimodal após tentativas."""
