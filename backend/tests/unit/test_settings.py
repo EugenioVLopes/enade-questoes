@@ -22,7 +22,26 @@ def test_settings_defaults_correspondem_ao_env_example(monkeypatch: pytest.Monke
     assert settings.data_dir == Path("./data/app")
     assert settings.llm_provider == "gemini_openai"
     assert settings.llm_model == "gemini-2.5-flash-lite"
+    assert settings.llm_max_tokens == 4096
     assert settings.resolved_data_dir == (RAIZ / "data" / "app").resolve()
+
+
+def test_settings_respeita_piso_minimo_llm_max_tokens_e_effective_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LLM_MAX_TOKENS", "1024")
+    monkeypatch.setenv("GEMINI_API_KEY", "gem-key")
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+
+    settings_piso = Settings(_env_file=None)
+    assert settings_piso.llm_max_tokens == 4096
+    assert settings_piso.effective_llm_api_key == "gem-key"
+
+    monkeypatch.setenv("LLM_MAX_TOKENS", "8192")
+    monkeypatch.setenv("LLM_API_KEY", "override-key")
+    settings_maior = Settings(_env_file=None)
+    assert settings_maior.llm_max_tokens == 8192
+    assert settings_maior.effective_llm_api_key == "override-key"
 
 
 def test_settings_respeita_sobrescrita_por_variavel_de_ambiente(
