@@ -4,19 +4,24 @@ from sqlalchemy import create_engine
 
 from alembic import context
 from infrastructure.config import Settings
+from infrastructure.persistence.models import Base
 
-target_metadata = None
+target_metadata = Base.metadata
+
+
+def _resolver_url() -> str:
+    return context.config.get_main_option("sqlalchemy.url") or Settings().database_url
 
 
 def run_migrations_offline() -> None:
-    url = Settings().database_url
+    url = _resolver_url()
     context.configure(url=url, target_metadata=target_metadata, literal_binds=True)
     with context.begin_transaction():
         context.run_migrations()
 
 
 def run_migrations_online() -> None:
-    url = Settings().database_url
+    url = _resolver_url()
     engine = create_engine(url, pool_pre_ping=True)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
