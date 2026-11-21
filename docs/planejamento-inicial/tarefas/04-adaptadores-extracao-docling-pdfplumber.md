@@ -1,6 +1,6 @@
 # 04 — Adaptadores de extração documental (Docling em subprocesso, pdfplumber e pypdfium2)
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Protótipo base: [run_prototype.py](../../../prototypes/05-extracao-pdf/run_prototype.py) · Decisões: [extração em prova real](../decisoes/05-prototipar-extracao-prova-real.md), [tratamento de mídia e casos de borda](../decisoes/10-tratamento-edicao-midia-e-casos-borda.md)
 
@@ -33,12 +33,12 @@ Adaptadores de produção em `backend/src/infrastructure/extracao/` implementand
 
 ## Critérios de aceite
 
-- [ ] `ExtratorGabaritoPdfPlumber` extrai 100% corretamente os 3 gabaritos reais (`2017`, `2019` com `ANULADA`, `2023` com `***`) em `< 500 ms` cada.
-- [ ] `ExtratorProvaDocling` roda em subprocesso isolado, segmenta 29/29 questões do Componente Específico no ENADE 2023, filtra barcodes/logos de margem e recorta automaticamente o `bbox` de `formula_nao_decodificada` (ex.: Q13/2023) como `Ativo Visual` (`origem = formula_recorte`).
-- [ ] Em página/prova com CMap corrompido (ex.: ENADE 2017), o detector aciona automaticamente `force_full_page_ocr=True` e registra `Alerta de Extração` `pdf_via_ocr`.
-- [ ] Páginas com fonte `Symbol` (ex.: Q10/2023) recebem o alerta informativo `fonte_symbol_detectada` sem forçar `revisao_prioritaria`.
-- [ ] `RenderizadorPaginaPdfPypdfium2` renderiza página solicitada em PNG válido e rejeita número de página fora do intervalo.
-- [ ] Testes de integração sobre `data/enade/` usam marker dedicado (`@pytest.mark.enade_real`) e pulam graciosamente caso os PDFs locais não estejam presentes.
+- [x] `ExtratorGabaritoPdfPlumber` extrai 100% corretamente os 3 gabaritos reais (`2017`, `2019` com `ANULADA`, `2023` com `***`) em `< 500 ms` cada.
+- [x] `ExtratorProvaDocling` roda em subprocesso isolado, segmenta 29/29 questões do Componente Específico no ENADE 2023, filtra barcodes/logos de margem e recorta automaticamente o `bbox` de `formula_nao_decodificada` (ex.: Q13/2023) como `Ativo Visual` (`origem = formula_recorte`).
+- [x] Em página/prova com CMap corrompido (ex.: ENADE 2017), o detector aciona automaticamente `force_full_page_ocr=True` e registra `Alerta de Extração` `pdf_via_ocr`.
+- [x] Páginas com fonte `Symbol` (ex.: Q10/2023) recebem o alerta informativo `fonte_symbol_detectada` sem forçar `revisao_prioritaria`.
+- [x] `RenderizadorPaginaPdfPypdfium2` renderiza página solicitada em PNG válido e rejeita número de página fora do intervalo.
+- [x] Testes de integração sobre `data/enade/` usam marker dedicado (`@pytest.mark.enade_real`) e pulam graciosamente caso os PDFs locais não estejam presentes.
 
 ## Verificação
 
@@ -47,4 +47,13 @@ Adaptadores de produção em `backend/src/infrastructure/extracao/` implementand
 
 ## Evidências e pendências
 
-Pendente de execução.
+- **Artefatos do Teamwork**: [prompt aprovado](../artefatos/04-teamwork-prompt.md) · [relatório de resultado](../artefatos/04-teamwork-resultado.md) (auditoria independente pós-vitória: `VICTORY CONFIRMED`).
+- **Dependências e configuração**: `backend/pyproject.toml` e `backend/uv.lock` atualizados com `docling==2.151.1`, `onnxruntime>=1.20` (RapidOCR), `pdfplumber>=0.11.10`, `pypdfium2>=5.15.2`, `pillow>=13.0.0` e `torch`/`torchvision` CPU via índice `pytorch-cpu`, marker `enade_real` e isolamento `pypdfium2`/`PIL` no `import-linter`.
+- **Adaptadores de extração**: `backend/src/infrastructure/extracao/` (`__init__.py`, `_worker.py`, `extrator_prova.py`, `inspecao_pdf.py`, `posprocessamento.py`, `gabarito.py`, `renderizador.py`) implementando `ExtratorProvaDocling` em subprocesso isolado com fallback RapidOCR para CMap corrompido, `ExtratorGabaritoPdfPlumber` e `RenderizadorPaginaPdfPypdfium2`.
+- **Testes unitários e de integração**: `backend/tests/unit/test_extracao_posprocessamento.py`, `backend/tests/unit/test_extracao_gabarito.py`, `backend/tests/unit/test_extracao_renderizador.py` e `backend/tests/integration/test_extracao_real.py`.
+- **Verificações executadas**:
+  - `make lint` → exit code `0` (`ruff check .`, `ruff format --check .` em 69 arquivos, `lint-imports` 3/3 contratos em 75 arquivos, `pnpm type-check`, `pnpm lint`)
+  - `cd backend && uv run pytest tests/unit/test_extracao_posprocessamento.py -v` → `7 passed` (`0.47s`)
+  - `cd backend && uv run pytest -m enade_real tests/integration/test_extracao_real.py -v` → `6 passed` (`63.90s`)
+  - `make test` → `166 passed` (backend) + `1 passed` (frontend)
+- **Pendências**: nenhuma na Tarefa 04.
