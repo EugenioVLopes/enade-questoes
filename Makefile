@@ -1,7 +1,7 @@
 export PYTHONUTF8 := 1
 export COREPACK_ENABLE_DOWNLOAD_PROMPT := 0
 
-.PHONY: db-up db-down migrate dev-backend dev-frontend dev lint test types
+.PHONY: db-up db-down migrate seed dev-backend dev-frontend dev lint test types
 
 db-up:
 	docker compose up -d --wait postgres
@@ -11,6 +11,9 @@ db-down:
 
 migrate:
 	cd backend && uv run alembic upgrade head
+
+seed:
+	cd backend && uv run python -m infrastructure.persistence.seed
 
 dev-backend:
 	cd backend && uv run uvicorn presentation.main:app --reload --host 127.0.0.1 --port 8000
