@@ -1,6 +1,6 @@
 # 03 — Persistência PostgreSQL 16, Alembic, armazenamento local e seed inicial
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Pesquisas/Decisões: [matriz ENADE e 18 disciplinas](../pesquisas/matriz-enade-dcns-eng-computacao.md), [modelo de domínio](../decisoes/06-modelo-de-dominio-e-glossario.md), [arquitetura e persistência](../decisoes/08-arquitetura-e-simplificacao-stack.md)
 
@@ -30,11 +30,11 @@ Migration Alembic inicial aplicável via `make migrate` criando todo o schema no
 
 ## Critérios de aceite
 
-- [ ] `alembic upgrade head` (e `downgrade base` → `upgrade head`) executam sem erro em PostgreSQL 16 limpo.
-- [ ] Restrições de integridade funcionam no banco: unicidade de `(exame, curso, ano)` em `Prova`, unicidade de `Classificação` `vigente = true` por `(questao_id, taxonomia_id)` e preservação histórica ao criar nova `Classificação` humana.
-- [ ] Busca textual combinada (`TSVECTOR` `portuguese`+`unaccent` + `pg_trgm`) encontra acentuação/flexões em português e termos técnicos exatos (`OSPF`, `VHDL`, `O(n log n)`) em teste de integração real.
-- [ ] Seed executado 2 vezes seguidas é 100% idempotente, resultando exatamente em 1 `Taxonomia`, 18 `Disciplina`s ativas e 1 `Perfil de Classificação` `v2-fronteiras`.
-- [ ] `ArmazenamentoArquivosLocal` grava, lê e remove arquivos respeitando a árvore de `DATA_DIR` e rejeitando *path traversal*.
+- [x] `alembic upgrade head` (e `downgrade base` → `upgrade head`) executam sem erro em PostgreSQL 16 limpo.
+- [x] Restrições de integridade funcionam no banco: unicidade de `(exame, curso, ano)` em `Prova`, unicidade de `Classificação` `vigente = true` por `(questao_id, taxonomia_id)` e preservação histórica ao criar nova `Classificação` humana.
+- [x] Busca textual combinada (`TSVECTOR` `portuguese`+`unaccent` + `pg_trgm`) encontra acentuação/flexões em português e termos técnicos exatos (`OSPF`, `VHDL`, `O(n log n)`) em teste de integração real.
+- [x] Seed executado 2 vezes seguidas é 100% idempotente, resultando exatamente em 1 `Taxonomia`, 18 `Disciplina`s ativas e 1 `Perfil de Classificação` `v2-fronteiras`.
+- [x] `ArmazenamentoArquivosLocal` grava, lê e remove arquivos respeitando a árvore de `DATA_DIR` e rejeitando *path traversal*.
 
 ## Verificação
 
@@ -42,4 +42,15 @@ Migration Alembic inicial aplicável via `make migrate` criando todo o schema no
 
 ## Evidências e pendências
 
-Pendente de execução.
+- **Artefatos do Teamwork**: [prompt aprovado](../artefatos/03-teamwork-prompt.md) · [relatório de resultado](../artefatos/03-teamwork-resultado.md) (auditoria independente pós-vitória: `VICTORY CONFIRMED`).
+- **Schema PostgreSQL 16 e Alembic**: `backend/alembic/env.py`, `backend/alembic/versions/0001_schema_inicial.py`, `backend/src/infrastructure/persistence/database.py` e `backend/src/infrastructure/persistence/models.py` (extensões `unaccent` e `pg_trgm`, configuração `pt_unaccent`, 12 tabelas, índice único funcional em `provas`, índice único parcial `vigente = true` em `classificacoes`, trigger `questoes.busca_tsv` e índices GIN).
+- **Repositórios SQLAlchemy 2**: `backend/src/infrastructure/persistence/repositorios.py` implementando os 9 repositórios do núcleo de persistência definidos em `backend/src/application/ports/repositorios.py` e busca textual combinada (`pt_unaccent` + `pg_trgm` + correspondência exata para tokens técnicos).
+- **Armazenamento local**: `backend/src/infrastructure/storage/local.py` (`ArmazenamentoArquivosLocal`) com escrita atômica e rejeição de *path traversal* / escape por symlink.
+- **Seed idempotente**: `backend/src/application/seed.py`, `backend/src/infrastructure/persistence/seed.py` e alvo `make seed` no `Makefile` carregando `enade-eng-computacao` (18 disciplinas ativas) e `v2-fronteiras:v1` (14 fronteiras interdisciplinares).
+- **Verificações executadas**:
+  - `make lint` → exit code `0` (`ruff check .`, `ruff format --check .` em 58 arquivos, `lint-imports` 3/3 contratos, `pnpm type-check`, `pnpm lint`)
+  - `cd backend && uv run alembic check` → `No new upgrade operations detected.`
+  - `make migrate && make seed && make seed` → `0001_schema_inicial (head)` e seed idempotente (1 taxonomia, 18 disciplinas ativas, 1 perfil `v2-fronteiras:v1`)
+  - `cd backend && uv run pytest -v` → `138 passed` (incluindo `tests/integration/test_persistence.py` 10/10, `tests/integration/test_seed.py` 1/1, `tests/integration/test_health_postgres.py` 1/1 e `tests/unit/test_armazenamento_local.py` 16/16)
+  - `make test` → `138 passed` (backend) + `1 passed` (frontend)
+- **Pendências**: nenhuma na Tarefa 03 (`RepositorioConjuntoOuro` permanece previsto para a Tarefa 14, conforme escopo acordado).

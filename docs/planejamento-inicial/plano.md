@@ -1,6 +1,6 @@
 # Plano — Enade Questões (v1)
 
-Status: **pendente** (planejamento fechado e decomposto; implementação ainda não iniciada).
+Status: **em andamento** (Fase 1 / Checkpoint 1 concluídos: Tarefas 01, 02 e 03 entregues; Fase 2 liberada para execução).
 
 Pedido original e critérios de aceite da fase de planejamento: [task.md](task.md).
 Mapa de decisões (11/11 tickets resolvidos): [mapa.md](mapa.md).
@@ -32,7 +32,7 @@ Construir a v1 local do **Enade Questões** como um monorepo (`backend/` + `fron
 ```text
 enade-questoes/
 ├── compose.yaml                     # PostgreSQL 16 local
-├── Makefile                         # dev, db-up, migrate, test, lint, types, golden-*
+├── Makefile                         # dev, db-up, migrate, seed, test, lint, types, golden-*
 ├── .env.example                     # DATABASE_URL, DATA_DIR, LLM_*
 ├── GLOSSARY.md                      # 16 termos canônicos
 ├── evals/golden/                    # Snapshots JSON versionados de Conjunto-Ouro
@@ -65,11 +65,11 @@ Cada tarefa é um arquivo independente em `tarefas/` executável em uma sessão 
 | 02 | [Núcleo de domínio, regras determinísticas e portas](tarefas/02-nucleo-dominio-regras-deterministicas.md) | Backend | 01 |
 | 03 | [Persistência PostgreSQL 16, Alembic, armazenamento local e seed inicial](tarefas/03-persistencia-postgres-alembic-seed.md) | Backend | 02 |
 
-**Checkpoint 1 — Fundação e Persistência**:
-- `import-linter` verde garantindo isolamento de `src/domain/`;
-- `pytest` verde no domínio e nos repositórios contra PostgreSQL 16 real (`compose.yaml`);
-- Migration sobe limpa e seed da `Taxonomia` ENADE (18 `Disciplina`s) + `Perfil de Classificação` `v2-fronteiras` é idempotente;
-- `GET /api/v1/health` responde `200` com banco conectado e frontend compila limpo.
+**Checkpoint 1 — Fundação e Persistência** (**concluído**):
+- [x] `import-linter` verde garantindo isolamento de `src/domain/` (3/3 contratos mantidos);
+- [x] `pytest` verde no domínio e nos repositórios contra PostgreSQL 16 real (`compose.yaml`) (`138 passed`);
+- [x] Migration sobe limpa (`0001_schema_inicial`) e `make seed` da `Taxonomia` ENADE (`enade-eng-computacao`, 18 `Disciplina`s) + `Perfil de Classificação` `v2-fronteiras:v1` é idempotente;
+- [x] `GET /api/v1/health` responde `200` com banco conectado e frontend compila limpo.
 
 ### Fase 2 — Ingestão Documental e Classificação Multimodal (Backend ponta a ponta)
 
