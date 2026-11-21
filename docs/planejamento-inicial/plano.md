@@ -1,6 +1,6 @@
 # Plano — Enade Questões (v1)
 
-Status: **em andamento** (Fase 1 / Checkpoint 1 concluídos: Tarefas 01, 02 e 03 entregues; Fase 2 em andamento: Tarefa 04 concluída).
+Status: **em andamento** (Fase 1 / Checkpoint 1 concluídos: Tarefas 01, 02 e 03 entregues; Fase 2 em andamento: Tarefas 04 e 05 concluídas).
 
 Pedido original e critérios de aceite da fase de planejamento: [task.md](task.md).
 Mapa de decisões (11/11 tickets resolvidos): [mapa.md](mapa.md).
