@@ -18,5 +18,9 @@ def test_get_health_com_postgresql_real_retorna_200() -> None:
         "worker": {
             "estado": "ocioso",
             "tarefa_ativa": None,
+            "tipo": None,
+            "alvo": None,
+            "processadas": None,
+            "total": None,
         },
     }
