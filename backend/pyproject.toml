@@ -5,13 +5,29 @@ description = "Backend FastAPI em arquitetura hexagonal para o Enade Questões"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "alembic>=1.14",
+    "docling==2.151.1",
     "fastapi>=0.115",
+    "onnxruntime>=1.20",
+    "pdfplumber>=0.11.10",
+    "pillow>=13.0.0",
     "psycopg[binary]>=3.2",
     "pydantic>=2.10",
     "pydantic-settings>=2.7",
+    "pypdfium2>=5.15.2",
     "sqlalchemy>=2.0",
+    "torch",
+    "torchvision",
     "uvicorn[standard]>=0.34",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
 
 [build-system]
 requires = ["hatchling"]
@@ -48,6 +64,9 @@ indent-style = "space"
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
 testpaths = ["tests"]
+markers = [
+    "enade_real: testes de integração que usam os PDFs oficiais em data/enade/",
+]
 
 [tool.importlinter]
 root_packages = ["domain", "application", "infrastructure", "presentation"]
@@ -77,6 +96,8 @@ forbidden_modules = [
     "sqlalchemy",
     "docling",
     "pdfplumber",
+    "pypdfium2",
+    "PIL",
     "openai",
     "pydantic",
     "pydantic_settings",
@@ -94,5 +115,7 @@ forbidden_modules = [
     "sqlalchemy",
     "docling",
     "pdfplumber",
+    "pypdfium2",
+    "PIL",
     "openai",
 ]
