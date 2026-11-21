@@ -49,7 +49,7 @@ Endpoints `/api/v1/provas/...` e `/api/v1/ativos-visuais/{id}/arquivo` operacion
 
 ## Evidências e pendências
 
-- **Artefatos do Teamwork**: [prompt aprovado](../artefatos/05-teamwork-prompt.md) · [relatório de resultado](../artefatos/05-teamwork-resultado.md) (auditoria independente pós-vitória: `VICTORY CONFIRMED`).
+- **Artefatos locais do Teamwork (fora do Git)**: `docs/planejamento-inicial/artefatos/05-teamwork/` (`prompt.md`, `resultado.md` e relatórios de auditoria; veredito: `VICTORY CONFIRMED`).
 - **Worker local sequencial e Health**: `backend/src/application/worker.py`, `backend/src/application/health.py`, `backend/src/presentation/api/app.py`, `backend/src/presentation/api/v1/health.py` e `frontend/src/api/client.ts` implementando `WorkerLocal` (1 tarefa pesada por vez, recuperação de `processando -> interrompida` no boot, hook de encadeamento em `MetadadosIngestao` e progresso ao vivo em `GET /api/v1/health`).
 - **Casos de uso e endpoints de Provas e Mídia**: `backend/src/application/provas.py`, `backend/src/application/midia.py`, `backend/src/application/exceptions.py`, `backend/src/presentation/api/v1/provas.py`, `backend/src/presentation/api/v1/ativos_visuais.py`, `backend/src/presentation/api/v1/_http_cache.py` e `backend/src/presentation/api/schemas.py`.
 - **Sincronização OpenAPI e testes**: `frontend/src/api/schema.d.ts` atualizado via `make types`; `backend/tests/integration/test_worker_local.py` e `backend/tests/integration/test_api_provas.py` cobrindo suíte rápida + smoke test `@pytest.mark.enade_real`.

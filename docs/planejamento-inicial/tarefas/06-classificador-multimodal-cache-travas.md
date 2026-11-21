@@ -1,6 +1,6 @@
 # 06 — Classificador multimodal OpenAI-compatível, cache determinístico e travas
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Protótipo base: [run_prototype.py](../../../prototypes/07-classificacao-llm/run_prototype.py) · Decisões: [provedores de API LLM](../decisoes/04-avaliar-provedores-api-llm.md), [estratégia de classificação multimodal](../decisoes/07-estrategia-classificacao-e-reclassificacao.md)
 
@@ -40,11 +40,11 @@ Adaptador `ClienteOpenAICompativel` implementando a porta `ClassificadorMultimod
 
 ## Critérios de aceite
 
-- [ ] JSON Schema gerado contém apenas `Disciplina`s ativas da `Taxonomia` e não contém `$defs`, `$ref` nem `title`.
-- [ ] Mensagem enviada ao cliente OpenAI inclui todos os `Ativo Visual`s da `Questão` em base64 PNG e respeita `temperature=0` e `max_tokens >= 4096`.
-- [ ] Chave de cache muda automaticamente quando qualquer entrada muda (enunciado, alternativa, imagem, `Taxonomia`, `Perfil de Classificação` ou modelo) e reaproveita resultado sem chamada HTTP quando idêntica.
-- [ ] Testes com cliente mockado cobrem: degradação `json_schema → json_object → prompt`, retry em `429`/`content=""`, 1 retry corretivo em principal alucinada, saneamento de secundárias/tópicos e `extra_body` específico de `vllm_qwen`.
-- [ ] Zero chamadas de rede externas na execução padrão do `pytest`.
+- [x] JSON Schema gerado contém apenas `Disciplina`s ativas da `Taxonomia` e não contém `$defs`, `$ref` nem `title`.
+- [x] Mensagem enviada ao cliente OpenAI inclui todos os `Ativo Visual`s da `Questão` em base64 PNG e respeita `temperature=0` e `max_tokens >= 4096`.
+- [x] Chave de cache muda automaticamente quando qualquer entrada muda (enunciado, alternativa, imagem, `Taxonomia`, `Perfil de Classificação` ou modelo) e reaproveita resultado sem chamada HTTP quando idêntica.
+- [x] Testes com cliente mockado cobrem: degradação `json_schema → json_object → prompt`, retry em `429`/`content=""`, 1 retry corretivo em principal alucinada, saneamento de secundárias/tópicos e `extra_body` específico de `vllm_qwen`.
+- [x] Zero chamadas de rede externas na execução padrão do `pytest`.
 
 ## Verificação
 
@@ -52,4 +52,12 @@ Adaptador `ClienteOpenAICompativel` implementando a porta `ClassificadorMultimod
 
 ## Evidências e pendências
 
-Pendente de execução.
+- **Artefatos locais do Teamwork (fora do Git)**: `docs/planejamento-inicial/artefatos/06-teamwork/` (`prompt.md`, `resultado.md` e relatórios de auditoria; veredito: `VICTORY CONFIRMED`).
+- **Configuração e serviço de aplicação**: `backend/pyproject.toml`, `backend/uv.lock`, `.env.example`, `backend/src/infrastructure/config.py`, `backend/src/application/classificacao.py` e `backend/src/application/exceptions.py` implementando `construir_json_schema_plano`, `montar_prompts_classificacao`, `ClassificarQuestaoService` com aplicação das travas determinísticas do domínio (`validar_e_normalizar_classificacao`), 1 retry corretivo para `disciplina_principal` fora do catálogo ativo e erro estruturado `ClassificacaoLLMInvalidaError`.
+- **Adaptador multimodal e cache determinístico**: `backend/src/infrastructure/llm/__init__.py`, `backend/src/infrastructure/llm/perfis.py` e `backend/src/infrastructure/llm/cliente_openai.py` implementando `ClienteOpenAICompativel` (envio multimodal PNG base64, perfis `gemini_openai`/`openrouter`/`vllm_qwen`/`openai_compatible`, degradação `json_schema -> json_object -> prompt_json`, rate-limiting `LLM_MAX_RPM`, backoff exponencial em `429`/`5xx`/timeout/`content=""` e cache atômico SHA-256 em `DATA_DIR/cache/llm/{sha256}.json`).
+- **Testes automatizados (100% mockados)**: `backend/tests/unit/test_classificador_multimodal.py`, `backend/tests/integration/test_cache_llm.py` e `backend/tests/unit/test_settings.py`.
+- **Verificações executadas**:
+  - `cd backend && uv run pytest tests/unit/test_classificador_multimodal.py tests/integration/test_cache_llm.py -v` → `24 passed`
+  - `make lint` → exit code `0` (`ruff check .`, `ruff format --check .`, `lint-imports` 3/3 contratos, `pnpm type-check`, `pnpm lint`)
+  - `make test` → `202 passed` (backend) + `1 passed` (frontend)
+- **Pendências**: nenhuma na Tarefa 06.

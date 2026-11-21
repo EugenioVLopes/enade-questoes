@@ -42,7 +42,7 @@ Migration Alembic inicial aplicável via `make migrate` criando todo o schema no
 
 ## Evidências e pendências
 
-- **Artefatos do Teamwork**: [prompt aprovado](../artefatos/03-teamwork-prompt.md) · [relatório de resultado](../artefatos/03-teamwork-resultado.md) (auditoria independente pós-vitória: `VICTORY CONFIRMED`).
+- **Artefatos locais do Teamwork (fora do Git)**: `docs/planejamento-inicial/artefatos/03-teamwork/` (`prompt.md`, `resultado.md` e relatórios de auditoria; veredito: `VICTORY CONFIRMED`).
 - **Schema PostgreSQL 16 e Alembic**: `backend/alembic/env.py`, `backend/alembic/versions/0001_schema_inicial.py`, `backend/src/infrastructure/persistence/database.py` e `backend/src/infrastructure/persistence/models.py` (extensões `unaccent` e `pg_trgm`, configuração `pt_unaccent`, 12 tabelas, índice único funcional em `provas`, índice único parcial `vigente = true` em `classificacoes`, trigger `questoes.busca_tsv` e índices GIN).
 - **Repositórios SQLAlchemy 2**: `backend/src/infrastructure/persistence/repositorios.py` implementando os 9 repositórios do núcleo de persistência definidos em `backend/src/application/ports/repositorios.py` e busca textual combinada (`pt_unaccent` + `pg_trgm` + correspondência exata para tokens técnicos).
 - **Armazenamento local**: `backend/src/infrastructure/storage/local.py` (`ArmazenamentoArquivosLocal`) com escrita atômica e rejeição de *path traversal* / escape por symlink.

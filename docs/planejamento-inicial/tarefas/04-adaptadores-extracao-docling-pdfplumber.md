@@ -47,7 +47,7 @@ Adaptadores de produção em `backend/src/infrastructure/extracao/` implementand
 
 ## Evidências e pendências
 
-- **Artefatos do Teamwork**: [prompt aprovado](../artefatos/04-teamwork-prompt.md) · [relatório de resultado](../artefatos/04-teamwork-resultado.md) (auditoria independente pós-vitória: `VICTORY CONFIRMED`).
+- **Artefatos locais do Teamwork (fora do Git)**: `docs/planejamento-inicial/artefatos/04-teamwork/` (`prompt.md`, `resultado.md` e relatórios de auditoria; veredito: `VICTORY CONFIRMED`).
 - **Dependências e configuração**: `backend/pyproject.toml` e `backend/uv.lock` atualizados com `docling==2.151.1`, `onnxruntime>=1.20` (RapidOCR), `pdfplumber>=0.11.10`, `pypdfium2>=5.15.2`, `pillow>=13.0.0` e `torch`/`torchvision` CPU via índice `pytorch-cpu`, marker `enade_real` e isolamento `pypdfium2`/`PIL` no `import-linter`.
 - **Adaptadores de extração**: `backend/src/infrastructure/extracao/` (`__init__.py`, `_worker.py`, `extrator_prova.py`, `inspecao_pdf.py`, `posprocessamento.py`, `gabarito.py`, `renderizador.py`) implementando `ExtratorProvaDocling` em subprocesso isolado com fallback RapidOCR para CMap corrompido, `ExtratorGabaritoPdfPlumber` e `RenderizadorPaginaPdfPypdfium2`.
 - **Testes unitários e de integração**: `backend/tests/unit/test_extracao_posprocessamento.py`, `backend/tests/unit/test_extracao_gabarito.py`, `backend/tests/unit/test_extracao_renderizador.py` e `backend/tests/integration/test_extracao_real.py`.
