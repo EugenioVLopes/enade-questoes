@@ -1,6 +1,6 @@
 # 02 — Núcleo de domínio, regras determinísticas e portas
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Glossário: [GLOSSARY.md](../../../GLOSSARY.md) · Decisões: [modelo de domínio](../decisoes/06-modelo-de-dominio-e-glossario.md), [estratégia de classificação](../decisoes/07-estrategia-classificacao-e-reclassificacao.md), [tratamento de mídia e alertas](../decisoes/10-tratamento-edicao-midia-e-casos-borda.md), [métricas e conjunto-ouro](../decisoes/11-metricas-qualidade-e-conjunto-ouro.md)
 
@@ -35,11 +35,11 @@ Camada `backend/src/domain/` completa (entidades, enums, regras determinísticas
 
 ## Critérios de aceite
 
-- [ ] `import-linter` confirma zero dependências externas ou de camadas superiores em `backend/src/domain/`.
-- [ ] Travas pós-LLM rejeitam principal inválida, saneiam secundárias (duplicatas, igual à principal, slug fantasma, > 2 itens), normalizam `Tópico`s e acionam `revisao_prioritaria` mesmo com `confianca = 0.99` quando houver `Alerta de Extração` crítico aberto.
-- [ ] Reavaliação de `Alerta de Extração` fecha automaticamente alertas estruturais corrigidos (`formula_nao_decodificada`, `alternativas_incompletas`, `enunciado_suspeito`, `gabarito_ausente_na_prova`) e mantém alertas de inspeção (`pdf_via_ocr`, `fonte_symbol_detectada`) até verificação explícita.
-- [ ] Critério de `Divergência de Reclassificação` abre divergência apenas quando mudam `disciplina_principal` ou `set(disciplinas_secundarias)`.
-- [ ] Calculador de métricas e gate de regressão cobrem casos de borda (`∅ == ∅ → 1.0` em secundárias, disciplinas raras no Macro-F1, piso estrutural `100%/95%` e modo migração).
+- [x] `import-linter` confirma zero dependências externas ou de camadas superiores em `backend/src/domain/`.
+- [x] Travas pós-LLM rejeitam principal inválida, saneiam secundárias (duplicatas, igual à principal, slug fantasma, > 2 itens), normalizam `Tópico`s e acionam `revisao_prioritaria` mesmo com `confianca = 0.99` quando houver `Alerta de Extração` crítico aberto.
+- [x] Reavaliação de `Alerta de Extração` fecha automaticamente alertas estruturais corrigidos (`formula_nao_decodificada`, `alternativas_incompletas`, `enunciado_suspeito`, `gabarito_ausente_na_prova`) e mantém alertas de inspeção (`pdf_via_ocr`, `fonte_symbol_detectada`) até verificação explícita.
+- [x] Critério de `Divergência de Reclassificação` abre divergência apenas quando mudam `disciplina_principal` ou `set(disciplinas_secundarias)`.
+- [x] Calculador de métricas e gate de regressão cobrem casos de borda (`∅ == ∅ → 1.0` em secundárias, disciplinas raras no Macro-F1, piso estrutural `100%/95%` e modo migração).
 
 ## Verificação
 
@@ -47,4 +47,14 @@ Camada `backend/src/domain/` completa (entidades, enums, regras determinísticas
 
 ## Evidências e pendências
 
-Pendente de execução.
+- **Núcleo de domínio (`backend/src/domain/`)**:
+  - Entidades, objetos de valor, enums e exceções puras (Python 3.13 stdlib, sem frameworks ou I/O): `backend/src/domain/exceptions.py`, `backend/src/domain/enums.py`, `backend/src/domain/prova.py`, `backend/src/domain/taxonomia.py`, `backend/src/domain/classificacao.py`, `backend/src/domain/avaliacao.py` e `backend/src/domain/__init__.py`.
+  - Regras determinísticas e calculador de métricas: `backend/src/domain/faixas_enade.py`, `backend/src/domain/alertas_extracao.py`, `backend/src/domain/reprocessamento.py`, `backend/src/domain/travas_classificacao.py` e `backend/src/domain/metricas_avaliacao.py`.
+- **Portas de aplicação (`backend/src/application/ports/`)**:
+  - Contratos `@runtime_checkable` (`Protocol`) e DTOs: `backend/src/application/ports/extracao.py` (`ExtratorProva`, `ExtratorGabarito`, `RenderizadorPaginaPdf`), `backend/src/application/ports/classificacao.py` (`ClassificadorMultimodal`), `backend/src/application/ports/armazenamento.py` (`ArmazenamentoArquivos`), `backend/src/application/ports/repositorios.py` (repositórios de domínio) e `backend/src/application/ports/__init__.py`.
+- **Verificações executadas (`backend/`)**:
+  - `cd backend && uv run python --version` → `Python 3.13.15`
+  - `cd backend && uv run lint-imports` → exit code `0` (`Analyzed 50 files, 154 dependencies.`, `Contracts: 3 kept, 0 broken.`: `Camadas hexagonais`, `Isolamento do dominio`, `Isolamento da aplicacao`)
+  - `cd backend && uv run ruff check . && uv run ruff format --check .` → `All checks passed!`, `48 files already formatted`
+  - `cd backend && uv run pytest tests/unit/` → `110 passed, 1 warning` (`tests/unit/test_alertas_extracao.py`, `tests/unit/test_application_ports.py`, `tests/unit/test_divergencia_reclassificacao.py`, `tests/unit/test_domain_prova.py`, `tests/unit/test_domain_taxonomia_classificacao.py`, `tests/unit/test_faixas_enade.py`, `tests/unit/test_health.py`, `tests/unit/test_metricas_avaliacao.py`, `tests/unit/test_reprocessamento.py`, `tests/unit/test_settings.py`, `tests/unit/test_travas_classificacao.py`)
+- **Pendências**: nenhuma na Tarefa 02 (persistência PostgreSQL e adaptadores concretos previstos nas Tarefas 03, 04 e 06).
