@@ -26,6 +26,7 @@ def health_check(
 ) -> JSONResponse:
     resultado = use_case.execute()
     estado_worker = cast(Literal["ocioso", "ocupado"], resultado.worker.estado)
+    tipo_worker = cast(Literal["ingestao", "classificacao"] | None, resultado.worker.tipo)
     status_servico = cast(Literal["ok", "degradado"], resultado.status)
     status_banco = cast(Literal["conectado", "indisponivel"], resultado.banco_dados)
 
@@ -35,6 +36,10 @@ def health_check(
         worker=WorkerHealthResponse(
             estado=estado_worker,
             tarefa_ativa=resultado.worker.tarefa_ativa,
+            tipo=tipo_worker,
+            alvo=resultado.worker.alvo,
+            processadas=resultado.worker.processadas,
+            total=resultado.worker.total,
         ),
     )
     http_status = status.HTTP_200_OK if resultado.banco_dados == "conectado" else status.HTTP_503_SERVICE_UNAVAILABLE

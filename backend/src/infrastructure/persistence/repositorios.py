@@ -104,8 +104,15 @@ def _para_dominio_prova(row: ProvaModel) -> Prova:
     )
 
 
+def _parse_uuid_opcional(valor: Any) -> UUID | None:
+    if valor is None or valor == "":
+        return None
+    return valor if isinstance(valor, UUID) else UUID(str(valor))
+
+
 def _para_dominio_ingestao(row: IngestaoModel) -> Ingestao:
     raw_meta = row.metadados or {}
+    status_encadeado_raw = raw_meta.get("status_classificacao_encadeada")
     metadados = MetadadosIngestao(
         total_questoes_extraidas=int(raw_meta.get("total_questoes_extraidas", 0)),
         imagens_detectadas=int(raw_meta.get("imagens_detectadas", 0)),
@@ -114,6 +121,10 @@ def _para_dominio_ingestao(row: IngestaoModel) -> Ingestao:
         usou_ocr=bool(raw_meta.get("usou_ocr", False)),
         paginas_fonte_symbol=tuple(int(p) for p in raw_meta.get("paginas_fonte_symbol", ())),
         gabarito_enviado=bool(raw_meta.get("gabarito_enviado", False)),
+        taxonomia_id_encadeada=_parse_uuid_opcional(raw_meta.get("taxonomia_id_encadeada")),
+        perfil_id_encadeada=_parse_uuid_opcional(raw_meta.get("perfil_id_encadeada")),
+        execucao_classificacao_id=_parse_uuid_opcional(raw_meta.get("execucao_classificacao_id")),
+        status_classificacao_encadeada=(str(status_encadeado_raw) if status_encadeado_raw is not None else None),
     )
     return Ingestao(
         id=row.id,
@@ -128,7 +139,7 @@ def _para_dominio_ingestao(row: IngestaoModel) -> Ingestao:
 
 
 def _para_dict_metadados_ingestao(metadados: MetadadosIngestao) -> dict[str, Any]:
-    return {
+    dados: dict[str, Any] = {
         "total_questoes_extraidas": metadados.total_questoes_extraidas,
         "imagens_detectadas": metadados.imagens_detectadas,
         "imagens_filtradas_margem": metadados.imagens_filtradas_margem,
@@ -137,6 +148,15 @@ def _para_dict_metadados_ingestao(metadados: MetadadosIngestao) -> dict[str, Any
         "paginas_fonte_symbol": list(metadados.paginas_fonte_symbol),
         "gabarito_enviado": metadados.gabarito_enviado,
     }
+    if metadados.taxonomia_id_encadeada is not None:
+        dados["taxonomia_id_encadeada"] = str(metadados.taxonomia_id_encadeada)
+    if metadados.perfil_id_encadeada is not None:
+        dados["perfil_id_encadeada"] = str(metadados.perfil_id_encadeada)
+    if metadados.execucao_classificacao_id is not None:
+        dados["execucao_classificacao_id"] = str(metadados.execucao_classificacao_id)
+    if metadados.status_classificacao_encadeada is not None:
+        dados["status_classificacao_encadeada"] = metadados.status_classificacao_encadeada
+    return dados
 
 
 def _para_dominio_ativo(row: AtivoVisualModel) -> AtivoVisual:

@@ -21,10 +21,203 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/provas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista todas as Provas com estado da última Ingestão, questões e alertas */
+        get: operations["listar_provas_api_v1_provas_get"];
+        put?: never;
+        /** Cadastra uma Prova (PDF obrigatório e Gabarito opcional) e enfileira sua Ingestão */
+        post: operations["criar_prova_api_v1_provas_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/provas/{prova_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtém os detalhes, status de Ingestão e métricas de uma Prova */
+        get: operations["obter_prova_api_v1_provas__prova_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/provas/{prova_id}/gabarito": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Atualiza o Gabarito oficial de uma Prova preservando classificações e edições manuais */
+        put: operations["atualizar_gabarito_api_v1_provas__prova_id__gabarito_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/provas/{prova_id}/reprocessar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reenfileira a extração de uma Prova conciliando questões por número oficial */
+        post: operations["reprocessar_prova_api_v1_provas__prova_id__reprocessar_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/provas/{prova_id}/paginas/{pagina}/imagem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Renderiza sob demanda uma página do PDF original da Prova em PNG */
+        get: operations["obter_pagina_prova_imagem_api_v1_provas__prova_id__paginas__pagina__imagem_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ativos-visuais/{ativo_id}/arquivo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Entrega o arquivo PNG de um Ativo Visual via ArmazenamentoArquivos */
+        get: operations["obter_arquivo_ativo_visual_api_v1_ativos_visuais__ativo_id__arquivo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_atualizar_gabarito_api_v1_provas__prova_id__gabarito_put */
+        Body_atualizar_gabarito_api_v1_provas__prova_id__gabarito_put: {
+            /** Arquivo Gabarito */
+            arquivo_gabarito: string;
+        };
+        /** Body_criar_prova_api_v1_provas_post */
+        Body_criar_prova_api_v1_provas_post: {
+            /** Arquivo Prova */
+            arquivo_prova: string;
+            /** Curso */
+            curso: string;
+            /** Ano */
+            ano: number;
+            /**
+             * Exame
+             * @default ENADE
+             */
+            exame: string;
+            /** Arquivo Gabarito */
+            arquivo_gabarito?: string | null;
+            /** Questao Inicio */
+            questao_inicio?: number | null;
+            /** Questao Fim */
+            questao_fim?: number | null;
+            /** Taxonomia Id */
+            taxonomia_id?: string | null;
+            /** Perfil Id */
+            perfil_id?: string | null;
+        };
+        /** ClassificacaoEncadeadaResponse */
+        ClassificacaoEncadeadaResponse: {
+            /** Solicitada */
+            solicitada: boolean;
+            /** Taxonomia Id */
+            taxonomia_id?: string | null;
+            /** Perfil Id */
+            perfil_id?: string | null;
+            /** Execucao Id */
+            execucao_id?: string | null;
+            /** Status */
+            status?: string | null;
+        };
+        /** ConflitoProvaResponse */
+        ConflitoProvaResponse: {
+            /** Detail */
+            detail: string;
+            /**
+             * Prova Id
+             * Format: uuid
+             */
+            prova_id: string;
+            /** Exame */
+            exame: string;
+            /** Curso */
+            curso: string;
+            /** Ano */
+            ano: number;
+        };
+        /** ContagemAlertasResponse */
+        ContagemAlertasResponse: {
+            /** Abertos */
+            abertos: number;
+            /** Criticos Abertos */
+            criticos_abertos: number;
+            /** Questoes Com Alerta Aberto */
+            questoes_com_alerta_aberto: number;
+        };
+        /** ContagemQuestoesResponse */
+        ContagemQuestoesResponse: {
+            /** Total */
+            total: number;
+            /** Editadas Manualmente */
+            editadas_manualmente: number;
+            /** Gabarito Validas */
+            gabarito_validas: number;
+            /** Gabarito Anuladas */
+            gabarito_anuladas: number;
+            /** Gabarito Pendentes */
+            gabarito_pendentes: number;
+        };
+        /** ErroDetalheResponse */
+        ErroDetalheResponse: {
+            /** Detail */
+            detail: string;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
         /** HealthResponse */
         HealthResponse: {
             /**
@@ -39,6 +232,164 @@ export interface components {
             banco_dados: "conectado" | "indisponivel";
             worker: components["schemas"]["WorkerHealthResponse"];
         };
+        /** IngestaoResumoResponse */
+        IngestaoResumoResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pendente" | "processando" | "concluida" | "erro" | "interrompida";
+            /** Mensagem Erro */
+            mensagem_erro?: string | null;
+            /** Iniciada Em */
+            iniciada_em?: string | null;
+            /** Concluida Em */
+            concluida_em?: string | null;
+            /** Criada Em */
+            criada_em?: string | null;
+            metadados: components["schemas"]["MetadadosIngestaoResponse"];
+        };
+        /** ListaProvasResponse */
+        ListaProvasResponse: {
+            /** Itens */
+            itens: components["schemas"]["ProvaDetalheResponse"][];
+            /** Total */
+            total: number;
+        };
+        /** MetadadosIngestaoResponse */
+        MetadadosIngestaoResponse: {
+            /** Total Questoes Extraidas */
+            total_questoes_extraidas: number;
+            /** Imagens Detectadas */
+            imagens_detectadas: number;
+            /** Imagens Filtradas Margem */
+            imagens_filtradas_margem: number;
+            /** Formulas Recortadas */
+            formulas_recortadas: number;
+            /** Usou Ocr */
+            usou_ocr: boolean;
+            /** Paginas Fonte Symbol */
+            paginas_fonte_symbol: number[];
+            /** Gabarito Enviado */
+            gabarito_enviado: boolean;
+        };
+        /** ProvaDetalheResponse */
+        ProvaDetalheResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Exame */
+            exame: string;
+            /** Curso */
+            curso: string;
+            /** Ano */
+            ano: number;
+            /** Questao Inicio */
+            questao_inicio: number;
+            /** Questao Fim */
+            questao_fim: number;
+            /** Possui Gabarito */
+            possui_gabarito: boolean;
+            /** Criada Em */
+            criada_em?: string | null;
+            /** Atualizada Em */
+            atualizada_em?: string | null;
+            ultima_ingestao?: components["schemas"]["IngestaoResumoResponse"] | null;
+            questoes: components["schemas"]["ContagemQuestoesResponse"];
+            alertas: components["schemas"]["ContagemAlertasResponse"];
+            classificacao_encadeada: components["schemas"]["ClassificacaoEncadeadaResponse"];
+        };
+        /** ProvaIngestaoAceitaResponse */
+        ProvaIngestaoAceitaResponse: {
+            /**
+             * Prova Id
+             * Format: uuid
+             */
+            prova_id: string;
+            /**
+             * Ingestao Id
+             * Format: uuid
+             */
+            ingestao_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pendente" | "processando" | "concluida" | "erro" | "interrompida";
+            /** Exame */
+            exame: string;
+            /** Curso */
+            curso: string;
+            /** Ano */
+            ano: number;
+            /** Questao Inicio */
+            questao_inicio: number;
+            /** Questao Fim */
+            questao_fim: number;
+            /** Possui Gabarito */
+            possui_gabarito: boolean;
+        };
+        /** ReprocessarProvaAceitaResponse */
+        ReprocessarProvaAceitaResponse: {
+            /**
+             * Prova Id
+             * Format: uuid
+             */
+            prova_id: string;
+            /**
+             * Ingestao Id
+             * Format: uuid
+             */
+            ingestao_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pendente" | "processando" | "concluida" | "erro" | "interrompida";
+            /** Sobrescrever Editadas */
+            sobrescrever_editadas: boolean;
+        };
+        /** ReprocessarProvaRequest */
+        ReprocessarProvaRequest: {
+            /**
+             * Sobrescrever Editadas
+             * @default false
+             */
+            sobrescrever_editadas: boolean;
+        };
+        /** ResumoAtualizacaoGabaritoResponse */
+        ResumoAtualizacaoGabaritoResponse: {
+            /** Mantidas */
+            mantidas: number;
+            /** Alteradas */
+            alteradas: number;
+            /** Anuladas */
+            anuladas: number;
+            /** Sem Correspondencia */
+            sem_correspondencia: number[];
+            /** Questoes Sem Gabarito */
+            questoes_sem_gabarito: number[];
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
         /** WorkerHealthResponse */
         WorkerHealthResponse: {
             /**
@@ -48,6 +399,14 @@ export interface components {
             estado: "ocioso" | "ocupado";
             /** Tarefa Ativa */
             tarefa_ativa?: string | null;
+            /** Tipo */
+            tipo?: ("ingestao" | "classificacao") | null;
+            /** Alvo */
+            alvo?: string | null;
+            /** Processadas */
+            processadas?: number | null;
+            /** Total */
+            total?: number | null;
         };
     };
     responses: never;
@@ -83,6 +442,326 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    listar_provas_api_v1_provas_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaProvasResponse"];
+                };
+            };
+        };
+    };
+    criar_prova_api_v1_provas_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_criar_prova_api_v1_provas_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvaIngestaoAceitaResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConflitoProvaResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    obter_prova_api_v1_provas__prova_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                prova_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvaDetalheResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    atualizar_gabarito_api_v1_provas__prova_id__gabarito_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                prova_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_atualizar_gabarito_api_v1_provas__prova_id__gabarito_put"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumoAtualizacaoGabaritoResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    reprocessar_prova_api_v1_provas__prova_id__reprocessar_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                prova_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReprocessarProvaRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReprocessarProvaAceitaResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    obter_pagina_prova_imagem_api_v1_provas__prova_id__paginas__pagina__imagem_get: {
+        parameters: {
+            query?: {
+                dpi?: number;
+            };
+            header?: {
+                "If-None-Match"?: string | null;
+            };
+            path: {
+                prova_id: string;
+                pagina: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description Not Modified */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    obter_arquivo_ativo_visual_api_v1_ativos_visuais__ativo_id__arquivo_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string | null;
+            };
+            path: {
+                ativo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description Not Modified */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

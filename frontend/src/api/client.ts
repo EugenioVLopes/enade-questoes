@@ -10,6 +10,10 @@ const healthResponseSchema = z.object({
   worker: z.object({
     estado: z.enum(["ocioso", "ocupado"]),
     tarefa_ativa: z.string().nullable(),
+    tipo: z.enum(["ingestao", "classificacao"]).nullable().optional(),
+    alvo: z.string().nullable().optional(),
+    processadas: z.number().int().nullable().optional(),
+    total: z.number().int().nullable().optional(),
   }),
 });
 

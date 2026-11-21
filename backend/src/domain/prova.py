@@ -151,6 +151,10 @@ class MetadadosIngestao:
     usou_ocr: bool = False
     paginas_fonte_symbol: tuple[int, ...] = ()
     gabarito_enviado: bool = False
+    taxonomia_id_encadeada: UUID | None = None
+    perfil_id_encadeada: UUID | None = None
+    execucao_classificacao_id: UUID | None = None
+    status_classificacao_encadeada: str | None = None
 
     def __post_init__(self) -> None:
         _validar_inteiro_nao_negativo(self.total_questoes_extraidas, "total_questoes_extraidas")
@@ -159,6 +163,9 @@ class MetadadosIngestao:
         _validar_inteiro_nao_negativo(self.formulas_recortadas, "formulas_recortadas")
         paginas = tuple(_validar_inteiro_positivo(p, "paginas_fonte_symbol") for p in self.paginas_fonte_symbol)
         object.__setattr__(self, "paginas_fonte_symbol", paginas)
+        if self.status_classificacao_encadeada is not None:
+            status_limpo = self.status_classificacao_encadeada.strip()
+            object.__setattr__(self, "status_classificacao_encadeada", status_limpo or None)
 
 
 @dataclass(frozen=True, slots=True)
