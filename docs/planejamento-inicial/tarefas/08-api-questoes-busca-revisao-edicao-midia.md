@@ -1,6 +1,6 @@
 # 08 — API de Questões, busca textual/trigrama, revisão humana e edição de conteúdo/mídia
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Explicação: [explicacao.md](../explicacao.md) · Decisões: [arquitetura e contratos](../decisoes/08-arquitetura-e-simplificacao-stack.md), [fluxos de revisão e consulta](../decisoes/09-fluxos-interface-web-revisao-consulta.md), [edição de mídia e casos de borda](../decisoes/10-tratamento-edicao-midia-e-casos-borda.md)
 
@@ -36,13 +36,13 @@ Todos os endpoints `/api/v1/questoes/...` e `/api/v1/ativos-visuais/...` impleme
 
 ## Critérios de aceite
 
-- [ ] `GET /api/v1/questoes` aplica corretamente a combinação de filtros, encontra termos em português acentuado e siglas/código (`OSPF`, `VHDL`), inclui secundárias por padrão (`incluir_secundarias=true`) e respeita a ordenação da fila priorizada.
-- [ ] `aprovar` atualiza o registro da IA in-place; `corrigir` cria novo registro `origem=humana` mantendo a saída original da IA intacta no histórico.
-- [ ] `resolver` divergência com `editar_manualmente` grava a nova `Classificação` humana e fecha a divergência atomicamente (rollback completo em erro de validação).
-- [ ] `PATCH /api/v1/questoes/{id}` fecha automaticamente `formula_nao_decodificada` e `alternativas_incompletas` quando corrigidos (ou reabre se quebrados), marca `editada_manualmente=true` e não enfileira nenhuma `Execução de Classificação`.
-- [ ] `PATCH /api/v1/questoes/{id}/alertas/{alerta_id}` resolve `pdf_via_ocr` e remove a questão de `com_alerta_extracao=true` (e de `revisao_prioritaria` quando não houver outro gatilho).
-- [ ] CRUD manual de `Ativo Visual` (`POST`, `PATCH`, `DELETE`) grava/remove arquivos via `ArmazenamentoArquivos`, registra `origem=upload_manual` e atualiza `editada_manualmente=true`.
-- [ ] `make types` completa sem erros.
+- [x] `GET /api/v1/questoes` aplica corretamente a combinação de filtros, encontra termos em português acentuado e siglas/código (`OSPF`, `VHDL`), inclui secundárias por padrão (`incluir_secundarias=true`) e respeita a ordenação da fila priorizada.
+- [x] `aprovar` atualiza o registro da IA in-place; `corrigir` cria novo registro `origem=humana` mantendo a saída original da IA intacta no histórico.
+- [x] `resolver` divergência com `editar_manualmente` grava a nova `Classificação` humana e fecha a divergência atomicamente (rollback completo em erro de validação).
+- [x] `PATCH /api/v1/questoes/{id}` fecha automaticamente `formula_nao_decodificada` e `alternativas_incompletas` quando corrigidos (ou reabre se quebrados), marca `editada_manualmente=true` e não enfileira nenhuma `Execução de Classificação`.
+- [x] `PATCH /api/v1/questoes/{id}/alertas/{alerta_id}` resolve `pdf_via_ocr` e remove a questão de `com_alerta_extracao=true` (e de `revisao_prioritaria` quando não houver outro gatilho).
+- [x] CRUD manual de `Ativo Visual` (`POST`, `PATCH`, `DELETE`) grava/remove arquivos via `ArmazenamentoArquivos`, registra `origem=upload_manual` e atualiza `editada_manualmente=true`.
+- [x] `make types` completa sem erros.
 
 ## Verificação
 
@@ -51,4 +51,36 @@ Todos os endpoints `/api/v1/questoes/...` e `/api/v1/ativos-visuais/...` impleme
 
 ## Evidências e pendências
 
-Pendente de execução.
+- **Artefatos locais do Teamwork (fora do Git)**: `docs/planejamento-inicial/artefatos/08-teamwork/` (`prompt.md`, `resultado.md` e o estado do run com decisões D1–D28, handoffs e gates). Veredito: `VICTORY CONFIRMED` após 4 iterações.
+- **Consulta, busca e fila (R1)**:
+  - `backend/src/application/questoes.py`, `backend/src/application/busca.py` e `backend/src/application/ports/consulta_questoes.py`.
+  - `backend/src/infrastructure/persistence/consulta_questoes.py` e `backend/src/infrastructure/persistence/predicados.py`.
+  - `backend/alembic/versions/0003_indice_trigrama_topicos.py`: índice GIN de trigramas sobre `Tópico`s.
+  - Ordenação da fila: `prioridade_efetiva DESC, confianca ASC NULLS LAST, ano DESC, numero ASC`.
+- **Revisão humana e divergências (R2)**:
+  - `backend/src/application/revisao.py` e `backend/src/domain/classificacao.py`.
+  - `aprovar` grava por UPDATE condicional e responde 409 se perder uma corrida.
+  - `resolver` roda numa só transação, com rollback completo em erro.
+- **Edição curada, alertas e ativos visuais (R3)**:
+  - Arquivos:
+    - `backend/src/domain/prova.py`, `backend/src/application/ports/imagem.py` e `backend/src/infrastructure/imagem.py`;
+    - `backend/src/presentation/api/v1/ativos_visuais.py` e `backend/src/presentation/api/tipos.py`;
+    - `backend/alembic/versions/0004_versao_questao.py`: lock otimista em `questoes.versao`.
+  - Ingestão, reprocessamento e gabarito (`backend/src/application/worker.py` e `backend/src/application/provas.py`) não usam a checagem de versão do revisor: travam as linhas e preservam a edição dele.
+  - A borda HTTP rejeita com 422:
+    - NUL e surrogates;
+    - listas e textos acima dos limites.
+- **Rotas, wiring e tipos (R4)**:
+  - `backend/src/presentation/api/v1/questoes.py` e `backend/src/presentation/api/schemas_questoes.py`;
+  - `backend/src/presentation/api/app.py` e `backend/src/presentation/main.py`;
+  - `frontend/src/api/schema.d.ts`, regenerado por `make types`.
+- **Testes automatizados**:
+  - Aceite: `backend/tests/integration/test_api_questoes.py`, `test_api_revisao_divergencias.py` e `test_api_edicao_midia.py`.
+  - Complementares: `test_api_questoes_validacoes.py`, `test_api_questoes_entradas_textuais.py`, `test_api_questoes_complementos.py`, `test_api_concorrencia_questoes.py` e `test_concorrencia_sistema.py`, além de `backend/tests/unit/test_curadoria_topicos.py`.
+- **Verificações reexecutadas no victory audit** (PostgreSQL 16 real, banco isolado):
+  - `cd backend && uv run pytest tests/integration/test_api_questoes.py tests/integration/test_api_revisao_divergencias.py tests/integration/test_api_edicao_midia.py` → `18 passed`
+  - `cd backend && uv run pytest` → `307 passed`
+  - `make lint && make types` → exit code `0`; `frontend/src/api/schema.d.ts` ficou idêntico depois da regeneração.
+- **Pendências**:
+  - Validação manual: pendente.
+  - Notas consultivas não bloqueantes, como nomes, helpers duplicados, mensagens de 422 e a divergência de `DATA_DIR/provas` na documentação: listadas em `artefatos/08-teamwork/resultado.md`.
