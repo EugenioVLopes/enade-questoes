@@ -191,6 +191,22 @@ def test_alembic_downgrade_base_e_upgrade_head_em_postgresql_16_limpo(db_teste_u
                 for row in conn.execute(text("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")).fetchall()
             }
             assert TABELAS_ESPERADAS.issubset(tabelas)
+
+            colunas_execucao = {
+                row[0]
+                for row in conn.execute(
+                    text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_schema = 'public' AND table_name = 'execucoes_classificacao'"
+                    )
+                ).fetchall()
+            }
+            assert {
+                "escopo_prova_id",
+                "escopo_questao_ids",
+                "questao_ids_alvo",
+                "questao_ids_concluidas",
+            }.issubset(colunas_execucao)
     finally:
         engine.dispose()
 
@@ -948,3 +964,229 @@ def test_busca_textual_precisao_simbolos_tecnicos_e_delimitadores_json(
     assert [q.id for q in repo_questoes.buscar_por_texto("50%")] == [q_hifen_wildcards.id]
     assert [q.id for q in repo_questoes.buscar_por_texto("_x_")] == [q_hifen_wildcards.id]
     assert [q.id for q in repo_questoes.buscar_por_texto(r"\n")] == [q_hifen_wildcards.id]
+
+
+def test_repositorio_taxonomias_operacoes_disciplina_contagens_e_protecao_exclusao(
+    session_factory_teste: sessionmaker[Session],
+) -> None:
+    repo_provas = RepositorioProvasSqlAlchemy(session_factory_teste)
+    repo_questoes = RepositorioQuestoesSqlAlchemy(session_factory_teste)
+    repo_tax = RepositorioTaxonomiasSqlAlchemy(session_factory_teste)
+    repo_class = RepositorioClassificacoesSqlAlchemy(session_factory_teste)
+
+    prova = repo_provas.salvar(Prova(exame="ENADE", curso="Engenharia de Computação", ano=2023))
+    q1 = repo_questoes.salvar(Questao(prova_id=prova.id, numero=1, enunciado="Questão 1"))
+    q2 = repo_questoes.salvar(Questao(prova_id=prova.id, numero=2, enunciado="Questão 2"))
+
+    d_alg = Disciplina(codigo="algoritmos", nome="Algoritmos", ementa="Grafos.")
+    d_redes = Disciplina(codigo="redes", nome="Redes", ementa="TCP/IP.")
+    tax1 = repo_tax.salvar(
+        Taxonomia(
+            codigo="enade-ec",
+            nome="ENADE EC",
+            curso_referencia="Engenharia de Computação",
+            disciplinas=[d_alg, d_redes],
+        )
+    )
+    tax2 = repo_tax.salvar(
+        Taxonomia(
+            codigo="pos-comp",
+            nome="POSCOMP",
+            disciplinas=[Disciplina(codigo="ia", nome="Inteligência Artificial")],
+        )
+    )
+
+    # Adicionar disciplina sem afetar irmãs
+    d_so = repo_tax.adicionar_disciplina(
+        tax1.id,
+        Disciplina(codigo="sistemas-op", nome="Sistemas Operacionais", ementa="Processos."),
+    )
+    encontrada = repo_tax.buscar_disciplina_por_id(d_so.id)
+    assert encontrada is not None
+    assert encontrada[0] == tax1.id
+    assert encontrada[1].codigo == "sistemas-op"
+
+    # Arquivar disciplina isoladamente preserva irmãs
+    d_so.arquivar()
+    d_so.nome = "SO Legado"
+    salva_so = repo_tax.salvar_disciplina(tax1.id, d_so)
+    assert salva_so.ativa is False
+    assert salva_so.nome == "SO Legado"
+
+    tax1_recarregada = repo_tax.buscar_por_id(tax1.id)
+    assert tax1_recarregada is not None
+    assert [d.codigo for d in tax1_recarregada.disciplinas] == ["algoritmos", "redes", "sistemas-op"]
+
+    # Salvar proibindo mutação de código da taxonomia e remoção física de disciplinas
+    tax_cod_alterado = Taxonomia(
+        id=tax1.id,
+        codigo="outro-codigo",
+        nome="ENADE EC",
+        disciplinas=tax1_recarregada.disciplinas,
+    )
+    with pytest.raises(ErroInvarianteDominio):
+        repo_tax.salvar(tax_cod_alterado)
+
+    tax_sem_disciplina = Taxonomia(id=tax1.id, codigo=tax1.codigo, nome="ENADE EC", disciplinas=[d_alg])
+    with pytest.raises(ErroInvarianteDominio):
+        repo_tax.salvar(tax_sem_disciplina)
+
+    # Contagens em lote (principal + secundária, somente vigente=True, sem contar histórico)
+    repo_class.salvar(
+        Classificacao(
+            questao_id=q1.id,
+            taxonomia_id=tax1.id,
+            disciplina_principal="algoritmos",
+            disciplinas_secundarias=("redes",),
+            vigente=True,
+        )
+    )
+    repo_class.salvar(
+        Classificacao(
+            questao_id=q2.id,
+            taxonomia_id=tax1.id,
+            disciplina_principal="redes",
+            disciplinas_secundarias=("sistemas-op",),
+            vigente=True,
+        )
+    )
+    repo_class.salvar(
+        Classificacao(
+            questao_id=q2.id,
+            taxonomia_id=tax1.id,
+            disciplina_principal="algoritmos",
+            vigente=False,
+        )
+    )
+    repo_class.salvar(
+        Classificacao(
+            questao_id=q1.id,
+            taxonomia_id=tax2.id,
+            disciplina_principal="ia",
+            vigente=True,
+        )
+    )
+
+    assert repo_tax.contar_classificacoes_vigentes_por_disciplinas(tax1.id) == {
+        "algoritmos": 1,
+        "redes": 2,
+        "sistemas-op": 1,
+    }
+    lote = repo_tax.contar_classificacoes_vigentes_por_taxonomias([tax1.id, tax2.id])
+    assert lote[tax1.id] == {"algoritmos": 1, "redes": 2, "sistemas-op": 1}
+    assert lote[tax2.id] == {"ia": 1}
+
+
+def test_repositorio_questoes_consultas_escopo_e_execucao_progresso_roundtrip(
+    session_factory_teste: sessionmaker[Session],
+) -> None:
+    repo_provas = RepositorioProvasSqlAlchemy(session_factory_teste)
+    repo_questoes = RepositorioQuestoesSqlAlchemy(session_factory_teste)
+    repo_tax = RepositorioTaxonomiasSqlAlchemy(session_factory_teste)
+    repo_perfis = RepositorioPerfisClassificacaoSqlAlchemy(session_factory_teste)
+    repo_exec = RepositorioExecucoesClassificacaoSqlAlchemy(session_factory_teste)
+    repo_class = RepositorioClassificacoesSqlAlchemy(session_factory_teste)
+
+    prova_2019 = repo_provas.salvar(Prova(exame="ENADE", curso="Engenharia de Computação", ano=2019))
+    prova_2023 = repo_provas.salvar(Prova(exame="ENADE", curso="Engenharia de Computação", ano=2023))
+
+    q_23_1 = repo_questoes.salvar(
+        Questao(prova_id=prova_2023.id, numero=1, enunciado="Q23-1 aprovada com arq principal")
+    )
+    q_23_2 = repo_questoes.salvar(
+        Questao(prova_id=prova_2023.id, numero=2, enunciado="Q23-2 pendente com arq secundária")
+    )
+    q_19_1 = repo_questoes.salvar(Questao(prova_id=prova_2019.id, numero=1, enunciado="Q19-1 sem classificação"))
+
+    tax1 = repo_tax.salvar(
+        Taxonomia(
+            codigo="tax-1",
+            nome="Tax 1",
+            disciplinas=[
+                Disciplina(codigo="algoritmos", nome="Algoritmos", ativa=True),
+                Disciplina(codigo="legado", nome="Legado", ativa=False),
+            ],
+        )
+    )
+    tax2 = repo_tax.salvar(
+        Taxonomia(
+            codigo="tax-2",
+            nome="Tax 2",
+            disciplinas=[Disciplina(codigo="redes", nome="Redes", ativa=True)],
+        )
+    )
+    perfil = repo_perfis.salvar(
+        PerfilClassificacao(
+            codigo="p1",
+            versao="v1",
+            diretrizes_gerais="D",
+            guia_fronteiras="G",
+            template_prompt="T",
+        )
+    )
+
+    repo_class.salvar(
+        Classificacao(
+            questao_id=q_23_1.id,
+            taxonomia_id=tax1.id,
+            disciplina_principal="legado",
+            status=StatusClassificacao.APROVADA,
+            vigente=True,
+        )
+    )
+    repo_class.salvar(
+        Classificacao(
+            questao_id=q_23_2.id,
+            taxonomia_id=tax1.id,
+            disciplina_principal="algoritmos",
+            disciplinas_secundarias=("legado",),
+            status=StatusClassificacao.PENDENTE_REVISAO,
+            vigente=True,
+        )
+    )
+
+    assert [q.id for q in repo_questoes.listar_todas()] == [q_23_1.id, q_23_2.id, q_19_1.id]
+    assert [q.id for q in repo_questoes.listar_pendentes_classificacao(tax1.id)] == [q_23_2.id, q_19_1.id]
+    assert [q.id for q in repo_questoes.listar_com_disciplina_arquivada(tax1.id)] == [q_23_1.id, q_23_2.id]
+    assert [q.id for q in repo_questoes.listar_por_ids([q_19_1.id, q_23_1.id, q_19_1.id])] == [
+        q_23_1.id,
+        q_19_1.id,
+    ]
+    assert repo_questoes.listar_por_ids([]) == []
+
+    exec_prova = ExecucaoClassificacao(
+        taxonomia_id=tax1.id,
+        perfil_id=perfil.id,
+        snapshot_taxonomia=tax1.snapshot_dict(),
+        snapshot_perfil=perfil.snapshot_dict(),
+        escopo=EscopoExecucao.PROVA_ID,
+        escopo_prova_id=prova_2023.id,
+        questao_ids_alvo=(q_23_1.id, q_23_2.id),
+        questao_ids_concluidas=(q_23_1.id,),
+        total_itens=2,
+        processadas=1,
+    )
+    repo_exec.salvar(exec_prova)
+
+    exec_ids = ExecucaoClassificacao(
+        taxonomia_id=tax2.id,
+        perfil_id=perfil.id,
+        snapshot_taxonomia=tax2.snapshot_dict(),
+        snapshot_perfil=perfil.snapshot_dict(),
+        escopo=EscopoExecucao.QUESTAO_IDS,
+        escopo_questao_ids=(q_19_1.id,),
+        questao_ids_alvo=(q_19_1.id,),
+        total_itens=1,
+    )
+    repo_exec.salvar(exec_ids)
+
+    lida = repo_exec.buscar_por_id(exec_prova.id)
+    assert lida is not None
+    assert lida.escopo_prova_id == prova_2023.id
+    assert lida.questao_ids_alvo == (q_23_1.id, q_23_2.id)
+    assert lida.questao_ids_concluidas == (q_23_1.id,)
+    assert lida.questao_ids_pendentes() == [q_23_2.id]
+
+    assert [e.id for e in repo_exec.listar(taxonomia_id=tax1.id)] == [exec_prova.id]
+    assert [e.id for e in repo_exec.listar(taxonomia_id=tax2.id)] == [exec_ids.id]
+    assert len(repo_exec.listar()) == 2
