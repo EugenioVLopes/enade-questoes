@@ -30,6 +30,10 @@ class ConflitoEstadoIngestaoError(ErroAplicacao):
     """Operação incompatível com uma Ingestão atualmente pendente ou em processamento."""
 
 
+class ConflitoRecursoError(ErroAplicacao):
+    """Conflito de unicidade ou estado incompatível ao criar/atualizar recurso."""
+
+
 class ArquivoPdfAusenteError(ErroAplicacao):
     """Arquivo PDF obrigatório ausente no armazenamento local."""
 

@@ -48,7 +48,7 @@ from domain.enums import (
 )
 from domain.exceptions import ErroValidacaoDominio
 from domain.prova import AtivoVisual, FaixaQuestoes, Gabarito, Ingestao, MetadadosIngestao, Prova, Questao
-from domain.taxonomia import Taxonomia
+from domain.taxonomia import Disciplina, Taxonomia
 
 
 class _FakeExtratorProva:
@@ -153,6 +153,18 @@ class _FakeRepositorios:
     def listar_por_prova(self, prova_id: UUID) -> list[Any]:
         return []
 
+    def listar_todas(self) -> list[Questao]:
+        return []
+
+    def listar_pendentes_classificacao(self, taxonomia_id: UUID) -> list[Questao]:
+        return []
+
+    def listar_com_disciplina_arquivada(self, taxonomia_id: UUID) -> list[Questao]:
+        return []
+
+    def listar_por_ids(self, questao_ids: Sequence[UUID]) -> list[Questao]:
+        return []
+
     def buscar_por_prova_e_numero(self, prova_id: UUID, numero: int) -> Questao | None:
         return None
 
@@ -165,6 +177,27 @@ class _FakeRepositorios:
     def buscar_por_codigo(self, codigo: str) -> Taxonomia | None:
         return None
 
+    def buscar_disciplina_por_id(self, disciplina_id: UUID) -> tuple[UUID, Disciplina] | None:
+        return None
+
+    def adicionar_disciplina(
+        self,
+        taxonomia_id: UUID,
+        disciplina: Disciplina,
+        *,
+        ordem: int | None = None,
+    ) -> Disciplina:
+        return disciplina
+
+    def salvar_disciplina(
+        self,
+        taxonomia_id: UUID,
+        disciplina: Disciplina,
+        *,
+        ordem: int | None = None,
+    ) -> Disciplina:
+        return disciplina
+
     def buscar_por_codigo_e_versao(self, codigo: str, versao: str) -> PerfilClassificacao | None:
         return None
 
@@ -174,6 +207,15 @@ class _FakeRepositorios:
         disciplina_codigo: str,
     ) -> int:
         return 0
+
+    def contar_classificacoes_vigentes_por_disciplinas(self, taxonomia_id: UUID) -> dict[str, int]:
+        return {}
+
+    def contar_classificacoes_vigentes_por_taxonomias(
+        self,
+        taxonomia_ids: Sequence[UUID],
+    ) -> dict[UUID, dict[str, int]]:
+        return {}
 
     def listar(self, **kwargs: Any) -> list[Any]:
         return []

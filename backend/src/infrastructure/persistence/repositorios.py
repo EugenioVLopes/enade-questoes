@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import case, delete, exists, func, or_, select, text, true, update
+from sqlalchemy import and_, case, delete, exists, func, or_, select, text, true, union, update
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from domain.classificacao import (
@@ -280,6 +280,10 @@ def _para_dominio_execucao(row: ExecucaoClassificacaoModel) -> ExecucaoClassific
         criada_em=row.criada_em,
         iniciada_em=row.iniciada_em,
         concluida_em=row.concluida_em,
+        escopo_prova_id=row.escopo_prova_id,
+        escopo_questao_ids=tuple(UUID(str(qid)) for qid in (row.escopo_questao_ids or ())),
+        questao_ids_alvo=tuple(UUID(str(qid)) for qid in (row.questao_ids_alvo or ())),
+        questao_ids_concluidas=tuple(UUID(str(qid)) for qid in (row.questao_ids_concluidas or ())),
     )
 
 
@@ -739,6 +743,27 @@ class RepositorioQuestoesSqlAlchemy:
             row = session.scalar(stmt)
             return _para_dominio_questao(row) if row is not None else None
 
+    def _listar_questoes_ordenadas(self, session: Session, *criterios: Any) -> list[Questao]:
+        stmt = (
+            select(QuestaoModel)
+            .join(ProvaModel, QuestaoModel.prova_id == ProvaModel.id)
+            .options(
+                selectinload(QuestaoModel.alternativas),
+                selectinload(QuestaoModel.ativos_visuais),
+                selectinload(QuestaoModel.alertas_extracao),
+            )
+        )
+        if criterios:
+            stmt = stmt.where(*criterios)
+        stmt = stmt.order_by(
+            ProvaModel.ano.desc(),
+            ProvaModel.exame.asc(),
+            ProvaModel.curso.asc(),
+            QuestaoModel.numero.asc(),
+            QuestaoModel.id.asc(),
+        )
+        return [_para_dominio_questao(row) for row in session.scalars(stmt).all()]
+
     def listar_por_prova(self, prova_id: UUID) -> list[Questao]:
         with self._session_factory() as session:
             stmt = (
@@ -752,6 +777,53 @@ class RepositorioQuestoesSqlAlchemy:
                 .order_by(QuestaoModel.numero.asc(), QuestaoModel.id.asc())
             )
             return [_para_dominio_questao(row) for row in session.scalars(stmt).all()]
+
+    def listar_todas(self) -> list[Questao]:
+        with self._session_factory() as session:
+            return self._listar_questoes_ordenadas(session)
+
+    def listar_pendentes_classificacao(self, taxonomia_id: UUID) -> list[Questao]:
+        ja_aprovada = exists(
+            select(ClassificacaoModel.id).where(
+                ClassificacaoModel.questao_id == QuestaoModel.id,
+                ClassificacaoModel.taxonomia_id == taxonomia_id,
+                ClassificacaoModel.vigente.is_(True),
+                ClassificacaoModel.status == StatusClassificacao.APROVADA.value,
+            )
+        )
+        with self._session_factory() as session:
+            return self._listar_questoes_ordenadas(session, ~ja_aprovada)
+
+    def listar_com_disciplina_arquivada(self, taxonomia_id: UUID) -> list[Questao]:
+        tem_arquivada = exists(
+            select(ClassificacaoModel.id)
+            .select_from(ClassificacaoModel)
+            .join(
+                DisciplinaModel,
+                and_(
+                    DisciplinaModel.taxonomia_id == ClassificacaoModel.taxonomia_id,
+                    DisciplinaModel.ativa.is_(False),
+                ),
+            )
+            .where(
+                ClassificacaoModel.questao_id == QuestaoModel.id,
+                ClassificacaoModel.taxonomia_id == taxonomia_id,
+                ClassificacaoModel.vigente.is_(True),
+                or_(
+                    ClassificacaoModel.disciplina_principal == DisciplinaModel.codigo,
+                    ClassificacaoModel.disciplinas_secundarias.op("@>")(func.jsonb_build_array(DisciplinaModel.codigo)),
+                ),
+            )
+        )
+        with self._session_factory() as session:
+            return self._listar_questoes_ordenadas(session, tem_arquivada)
+
+    def listar_por_ids(self, questao_ids: Sequence[UUID]) -> list[Questao]:
+        ids_unicos = list(dict.fromkeys(questao_ids))
+        if not ids_unicos:
+            return []
+        with self._session_factory() as session:
+            return self._listar_questoes_ordenadas(session, QuestaoModel.id.in_(ids_unicos))
 
     def buscar_por_texto(
         self,
@@ -932,26 +1004,26 @@ class RepositorioTaxonomiasSqlAlchemy:
                 session.flush()
                 return _para_dominio_taxonomia(row)
 
-            row.codigo = taxonomia.codigo
+            if row.codigo != taxonomia.codigo:
+                raise ErroInvarianteDominio(
+                    f"'codigo' da Taxonomia '{row.codigo}' é imutável (recebido: '{taxonomia.codigo}')."
+                )
+
             row.nome = taxonomia.nome
             row.curso_referencia = taxonomia.curso_referencia
 
             incoming_por_codigo = {disc.codigo: disc for disc in taxonomia.disciplinas}
-            removeu = False
             for existente in list(row.disciplinas):
                 alvo = incoming_por_codigo.get(existente.codigo)
                 if alvo is None or alvo.id != existente.id:
-                    row.disciplinas.remove(existente)
-                    removeu = True
-
-            if removeu:
-                session.flush()
+                    raise ErroInvarianteDominio(
+                        f"Exclusão física ou substituição de ID da Disciplina '{existente.codigo}' é proibida."
+                    )
 
             existentes_por_id = {item.id: item for item in row.disciplinas}
             for ordem, disc in enumerate(taxonomia.disciplinas, start=1):
                 existente = existentes_por_id.get(disc.id)
                 if existente is not None:
-                    existente.codigo = disc.codigo
                     existente.nome = disc.nome
                     existente.ementa = disc.ementa
                     existente.ativa = disc.ativa
@@ -1001,6 +1073,108 @@ class RepositorioTaxonomiasSqlAlchemy:
             )
             return [_para_dominio_taxonomia(row) for row in session.scalars(stmt).all()]
 
+    def buscar_disciplina_por_id(self, disciplina_id: UUID) -> tuple[UUID, Disciplina] | None:
+        with self._session_factory() as session:
+            row = session.get(DisciplinaModel, disciplina_id)
+            if row is None:
+                return None
+            return (
+                row.taxonomia_id,
+                Disciplina(
+                    id=row.id,
+                    codigo=row.codigo,
+                    nome=row.nome,
+                    ementa=row.ementa,
+                    ativa=row.ativa,
+                ),
+            )
+
+    def adicionar_disciplina(
+        self,
+        taxonomia_id: UUID,
+        disciplina: Disciplina,
+        *,
+        ordem: int | None = None,
+    ) -> Disciplina:
+        if ordem is not None and (isinstance(ordem, bool) or not isinstance(ordem, int) or ordem < 0):
+            raise ErroValidacaoDominio(f"'ordem' da Disciplina deve ser inteiro >= 0; recebido: {ordem!r}.")
+
+        with self._session_factory.begin() as session:
+            tax_row = session.scalar(select(TaxonomiaModel).where(TaxonomiaModel.id == taxonomia_id).with_for_update())
+            if tax_row is None:
+                raise ErroInvarianteDominio(f"Taxonomia '{taxonomia_id}' não encontrada para adicionar disciplina.")
+
+            if ordem is None:
+                max_ordem = session.scalar(
+                    select(func.coalesce(func.max(DisciplinaModel.ordem), 0)).where(
+                        DisciplinaModel.taxonomia_id == taxonomia_id
+                    )
+                )
+                ordem_efetiva = int(max_ordem or 0) + 1
+            else:
+                ordem_efetiva = ordem
+
+            disc_row = DisciplinaModel(
+                id=disciplina.id,
+                taxonomia_id=taxonomia_id,
+                codigo=disciplina.codigo,
+                nome=disciplina.nome,
+                ementa=disciplina.ementa,
+                ativa=disciplina.ativa,
+                ordem=ordem_efetiva,
+            )
+            session.add(disc_row)
+            session.flush()
+            return Disciplina(
+                id=disc_row.id,
+                codigo=disc_row.codigo,
+                nome=disc_row.nome,
+                ementa=disc_row.ementa,
+                ativa=disc_row.ativa,
+            )
+
+    def salvar_disciplina(
+        self,
+        taxonomia_id: UUID,
+        disciplina: Disciplina,
+        *,
+        ordem: int | None = None,
+    ) -> Disciplina:
+        if ordem is not None and (isinstance(ordem, bool) or not isinstance(ordem, int) or ordem < 0):
+            raise ErroValidacaoDominio(f"'ordem' da Disciplina deve ser inteiro >= 0; recebido: {ordem!r}.")
+
+        with self._session_factory.begin() as session:
+            row = session.scalar(
+                select(DisciplinaModel)
+                .where(
+                    DisciplinaModel.id == disciplina.id,
+                    DisciplinaModel.taxonomia_id == taxonomia_id,
+                )
+                .with_for_update()
+            )
+            if row is None:
+                raise ErroInvarianteDominio(
+                    f"Disciplina '{disciplina.id}' não encontrada na taxonomia '{taxonomia_id}'."
+                )
+            if row.codigo != disciplina.codigo:
+                raise ErroInvarianteDominio(
+                    f"'codigo' da Disciplina '{row.codigo}' é imutável (recebido: '{disciplina.codigo}')."
+                )
+
+            row.nome = disciplina.nome
+            row.ementa = disciplina.ementa
+            row.ativa = disciplina.ativa
+            if ordem is not None:
+                row.ordem = ordem
+            session.flush()
+            return Disciplina(
+                id=row.id,
+                codigo=row.codigo,
+                nome=row.nome,
+                ementa=row.ementa,
+                ativa=row.ativa,
+            )
+
     def contar_classificacoes_vigentes_por_disciplina(
         self,
         taxonomia_id: UUID,
@@ -1020,6 +1194,56 @@ class RepositorioTaxonomiasSqlAlchemy:
             )
             total = session.scalar(stmt)
             return int(total or 0)
+
+    def contar_classificacoes_vigentes_por_disciplinas(self, taxonomia_id: UUID) -> dict[str, int]:
+        return self.contar_classificacoes_vigentes_por_taxonomias([taxonomia_id]).get(taxonomia_id, {})
+
+    def contar_classificacoes_vigentes_por_taxonomias(
+        self,
+        taxonomia_ids: Sequence[UUID],
+    ) -> dict[UUID, dict[str, int]]:
+        ids_unicos = list(dict.fromkeys(taxonomia_ids))
+        if not ids_unicos:
+            return {}
+
+        principal_q = select(
+            ClassificacaoModel.taxonomia_id.label("taxonomia_id"),
+            ClassificacaoModel.id.label("classificacao_id"),
+            ClassificacaoModel.disciplina_principal.label("codigo"),
+        ).where(
+            ClassificacaoModel.taxonomia_id.in_(ids_unicos),
+            ClassificacaoModel.vigente.is_(True),
+        )
+        sec_elem = (
+            func.jsonb_array_elements_text(ClassificacaoModel.disciplinas_secundarias)
+            .table_valued("value")
+            .alias("sec")
+        )
+        secundaria_q = (
+            select(
+                ClassificacaoModel.taxonomia_id.label("taxonomia_id"),
+                ClassificacaoModel.id.label("classificacao_id"),
+                sec_elem.c.value.label("codigo"),
+            )
+            .select_from(ClassificacaoModel)
+            .join(sec_elem, true())
+            .where(
+                ClassificacaoModel.taxonomia_id.in_(ids_unicos),
+                ClassificacaoModel.vigente.is_(True),
+            )
+        )
+        uniao = union(principal_q, secundaria_q).subquery("classificacoes_por_disciplina")
+        stmt = select(
+            uniao.c.taxonomia_id,
+            uniao.c.codigo,
+            func.count(uniao.c.classificacao_id),
+        ).group_by(uniao.c.taxonomia_id, uniao.c.codigo)
+
+        contagens: dict[UUID, dict[str, int]] = {tid: {} for tid in ids_unicos}
+        with self._session_factory() as session:
+            for tid, codigo, total in session.execute(stmt).all():
+                contagens.setdefault(tid, {})[str(codigo)] = int(total or 0)
+        return contagens
 
 
 class RepositorioPerfisClassificacaoSqlAlchemy:
@@ -1093,6 +1317,9 @@ class RepositorioExecucoesClassificacaoSqlAlchemy:
         snap_tax = _descongelar_json(execucao.snapshot_taxonomia)
         snap_perf = _descongelar_json(execucao.snapshot_perfil)
         erros = {str(k): str(v) for k, v in execucao.erros_por_questao.items()}
+        escopo_questao_ids = [str(qid) for qid in execucao.escopo_questao_ids]
+        questao_ids_alvo = [str(qid) for qid in execucao.questao_ids_alvo]
+        questao_ids_concluidas = [str(qid) for qid in execucao.questao_ids_concluidas]
 
         with self._session_factory.begin() as session:
             row = session.get(ExecucaoClassificacaoModel, execucao.id)
@@ -1116,6 +1343,10 @@ class RepositorioExecucoesClassificacaoSqlAlchemy:
                     criada_em=execucao.criada_em or agora,
                     iniciada_em=execucao.iniciada_em,
                     concluida_em=execucao.concluida_em,
+                    escopo_prova_id=execucao.escopo_prova_id,
+                    escopo_questao_ids=escopo_questao_ids,
+                    questao_ids_alvo=questao_ids_alvo,
+                    questao_ids_concluidas=questao_ids_concluidas,
                 )
                 session.add(row)
             else:
@@ -1137,6 +1368,10 @@ class RepositorioExecucoesClassificacaoSqlAlchemy:
                     row.criada_em = execucao.criada_em
                 row.iniciada_em = execucao.iniciada_em
                 row.concluida_em = execucao.concluida_em
+                row.escopo_prova_id = execucao.escopo_prova_id
+                row.escopo_questao_ids = escopo_questao_ids
+                row.questao_ids_alvo = questao_ids_alvo
+                row.questao_ids_concluidas = questao_ids_concluidas
             session.flush()
             return _para_dominio_execucao(row)
 
@@ -1145,9 +1380,12 @@ class RepositorioExecucoesClassificacaoSqlAlchemy:
             row = session.get(ExecucaoClassificacaoModel, execucao_id)
             return _para_dominio_execucao(row) if row is not None else None
 
-    def listar(self) -> list[ExecucaoClassificacao]:
+    def listar(self, *, taxonomia_id: UUID | None = None) -> list[ExecucaoClassificacao]:
         with self._session_factory() as session:
-            stmt = select(ExecucaoClassificacaoModel).order_by(
+            stmt = select(ExecucaoClassificacaoModel)
+            if taxonomia_id is not None:
+                stmt = stmt.where(ExecucaoClassificacaoModel.taxonomia_id == taxonomia_id)
+            stmt = stmt.order_by(
                 ExecucaoClassificacaoModel.criada_em.desc(),
                 ExecucaoClassificacaoModel.id.desc(),
             )

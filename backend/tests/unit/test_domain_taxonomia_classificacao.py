@@ -14,6 +14,7 @@ from domain.classificacao import (
 )
 from domain.enums import (
     CodigoAlertaExtracao,
+    EscopoExecucao,
     OrigemClassificacao,
     ResolucaoDivergencia,
     SituacaoGabarito,
@@ -406,3 +407,165 @@ def test_taxonomia_e_conjunto_ouro_materializam_geradores_e_rejeitam_entradas_in
         topicos_candidatos=(t for t in ["roteamento"]),  # type: ignore[arg-type]
     )
     assert div.topicos_candidatos == ("roteamento",)
+
+
+def test_taxonomia_e_perfil_de_snapshot_reconstroem_entidades_e_rejeitam_invalidos() -> None:
+    tax = _taxonomia_exemplo()
+    perfil = PerfilClassificacao(
+        codigo="v2-fronteiras",
+        versao="v1",
+        diretrizes_gerais="Diretrizes.",
+        guia_fronteiras="Fronteiras.",
+        template_prompt="Prompt {enunciado}",
+        descricao="Descrição do perfil.",
+    )
+
+    tax_reconstruida = Taxonomia.de_snapshot(tax.snapshot_dict())
+    assert tax_reconstruida.id == tax.id
+    assert tax_reconstruida.codigo == tax.codigo
+    assert tax_reconstruida.curso_referencia == tax.curso_referencia
+    assert [(d.id, d.codigo, d.ementa, d.ativa) for d in tax_reconstruida.disciplinas] == [
+        (d.id, d.codigo, d.ementa, d.ativa) for d in tax.ativas()
+    ]
+
+    perfil_reconstruido = PerfilClassificacao.de_snapshot(perfil.snapshot_dict())
+    assert perfil_reconstruido.id == perfil.id
+    assert perfil_reconstruido.codigo == perfil.codigo
+    assert perfil_reconstruido.versao == perfil.versao
+    assert perfil_reconstruido.diretrizes_gerais == perfil.diretrizes_gerais
+    assert perfil_reconstruido.guia_fronteiras == perfil.guia_fronteiras
+    assert perfil_reconstruido.template_prompt == perfil.template_prompt
+    assert perfil_reconstruido.descricao == perfil.descricao
+
+    with pytest.raises(ErroValidacaoDominio):
+        Taxonomia.de_snapshot({"codigo": "x", "nome": "X", "disciplinas": "invalido"})
+    with pytest.raises(ErroValidacaoDominio):
+        Taxonomia.de_snapshot(
+            {"codigo": "x", "nome": "X", "disciplinas": [{"codigo": "a", "nome": "A", "ativa": "sim"}]}
+        )
+    with pytest.raises(ErroValidacaoDominio):
+        PerfilClassificacao.de_snapshot({"codigo": "p", "versao": "v1", "diretrizes_gerais": "d"})
+
+
+def test_execucao_classificacao_valida_escopo_rastreia_itens_e_retoma_sem_duplicar_processadas() -> None:
+    tax = _taxonomia_exemplo()
+    perfil = PerfilClassificacao(
+        codigo="v2-fronteiras",
+        versao="v1",
+        diretrizes_gerais="Diretrizes.",
+        guia_fronteiras="",
+        template_prompt="Prompt {enunciado}",
+    )
+    prova_id = uuid4()
+    q1, q2, q3 = uuid4(), uuid4(), uuid4()
+
+    # Invariantes de escopo
+    with pytest.raises(ErroValidacaoDominio):
+        ExecucaoClassificacao(
+            taxonomia_id=tax.id,
+            perfil_id=perfil.id,
+            snapshot_taxonomia=tax.snapshot_dict(),
+            snapshot_perfil=perfil.snapshot_dict(),
+            escopo=EscopoExecucao.PROVA_ID,
+        )
+    with pytest.raises(ErroValidacaoDominio):
+        ExecucaoClassificacao(
+            taxonomia_id=tax.id,
+            perfil_id=perfil.id,
+            snapshot_taxonomia=tax.snapshot_dict(),
+            snapshot_perfil=perfil.snapshot_dict(),
+            escopo=EscopoExecucao.QUESTAO_IDS,
+        )
+    with pytest.raises(ErroValidacaoDominio):
+        ExecucaoClassificacao(
+            taxonomia_id=tax.id,
+            perfil_id=perfil.id,
+            snapshot_taxonomia=tax.snapshot_dict(),
+            snapshot_perfil=perfil.snapshot_dict(),
+            escopo=EscopoExecucao.TODAS,
+            escopo_prova_id=prova_id,
+        )
+    with pytest.raises(ErroValidacaoDominio):
+        ExecucaoClassificacao(
+            taxonomia_id=tax.id,
+            perfil_id=perfil.id,
+            snapshot_taxonomia=tax.snapshot_dict(),
+            snapshot_perfil=perfil.snapshot_dict(),
+            escopo=EscopoExecucao.PROVA_ID,
+            escopo_prova_id=prova_id,
+            escopo_questao_ids=(q1,),
+        )
+
+    execucao = ExecucaoClassificacao(
+        taxonomia_id=tax.id,
+        perfil_id=perfil.id,
+        snapshot_taxonomia={
+            "codigo": tax.codigo,
+            "nome": tax.nome,
+            "disciplinas": [{"codigo": "algoritmos", "nome": "Algoritmos"}],
+        },
+        snapshot_perfil={
+            "codigo": perfil.codigo,
+            "versao": perfil.versao,
+            "diretrizes_gerais": "D",
+            "template_prompt": "T",
+        },
+        escopo=EscopoExecucao.QUESTAO_IDS,
+        escopo_questao_ids=(q1, q2, q3, q1),
+        questao_ids_alvo=(q1, q2, q3),
+        total_itens=3,
+    )
+    assert execucao.escopo_questao_ids == (q1, q2, q3)
+    assert execucao.questao_ids_pendentes() == [q1, q2, q3]
+    assert execucao.reconstruir_taxonomia_snapshot().id == tax.id
+    assert execucao.reconstruir_perfil_snapshot().id == perfil.id
+
+    with pytest.raises(ErroInvarianteDominio):
+        execucao.registrar_sucesso_item(q1)
+    with pytest.raises(ErroInvarianteDominio):
+        execucao.preparar_retomada()
+
+    t0 = datetime(2026, 11, 22, 10, 0, tzinfo=UTC)
+    execucao.iniciar(t0)
+    assert execucao.iniciada_em == t0
+
+    execucao.registrar_pulo_item(q1)
+    execucao.registrar_erro_item(q2, "Falha LLM", prompt_tokens=15, completion_tokens=5)
+    execucao.registrar_sucesso_item(
+        q3,
+        cache_hit=True,
+        prompt_tokens=20,
+        completion_tokens=10,
+        abriu_divergencia=True,
+    )
+    assert execucao.processadas == 3
+    assert execucao.questao_ids_concluidas == (q1, q3)
+    assert execucao.questao_ids_pendentes() == [q2]
+    assert execucao.cache_hits == 1
+    assert execucao.prompt_tokens == 35
+    assert execucao.completion_tokens == 15
+    assert execucao.divergencias_abertas == 1
+
+    t1 = datetime(2026, 11, 22, 10, 5, tzinfo=UTC)
+    execucao.concluir(t1)
+    assert execucao.status == StatusExecucaoClassificacao.CONCLUIDA_COM_ERROS
+    assert execucao.concluida_em == t1
+
+    execucao.preparar_retomada()
+    assert execucao.status == StatusExecucaoClassificacao.PENDENTE
+    assert execucao.concluida_em is None
+    assert execucao.erros_por_questao == {}
+    assert execucao.processadas == 2
+    assert execucao.questao_ids_pendentes() == [q2]
+
+    t2 = datetime(2026, 11, 22, 10, 10, tzinfo=UTC)
+    execucao.iniciar(t2)
+    assert execucao.iniciada_em == t0  # preserva iniciada_em original
+    execucao.registrar_sucesso_item(q2, prompt_tokens=12, completion_tokens=8)
+    assert execucao.processadas == 3
+    assert execucao.questao_ids_pendentes() == []
+
+    execucao.concluir(t2)
+    assert execucao.status == StatusExecucaoClassificacao.CONCLUIDA
+    with pytest.raises(ErroInvarianteDominio):
+        execucao.preparar_retomada()

@@ -156,3 +156,87 @@ class Taxonomia:
                 for d in self.ativas()
             ],
         }
+
+    @classmethod
+    def de_snapshot(cls, snapshot: Mapping[str, Any]) -> Taxonomia:
+        if not isinstance(snapshot, Mapping):
+            raise ErroValidacaoDominio("'snapshot_taxonomia' deve ser um mapeamento.")
+
+        codigo = snapshot.get("codigo")
+        nome = snapshot.get("nome")
+        curso_referencia = snapshot.get("curso_referencia", "")
+        if not isinstance(codigo, str):
+            raise ErroValidacaoDominio("'codigo' no snapshot de Taxonomia deve ser string.")
+        if not isinstance(nome, str):
+            raise ErroValidacaoDominio("'nome' no snapshot de Taxonomia deve ser string.")
+        if curso_referencia is None:
+            curso_referencia = ""
+        if not isinstance(curso_referencia, str):
+            raise ErroValidacaoDominio("'curso_referencia' no snapshot de Taxonomia deve ser string.")
+
+        raw_id = snapshot.get("id")
+        if raw_id is None:
+            taxonomia_id = uuid4()
+        elif isinstance(raw_id, UUID):
+            taxonomia_id = raw_id
+        else:
+            try:
+                taxonomia_id = UUID(str(raw_id))
+            except (ValueError, TypeError, AttributeError) as err:
+                raise ErroValidacaoDominio(f"'id' inválido no snapshot de Taxonomia: {raw_id!r}.") from err
+
+        raw_disciplinas = snapshot.get("disciplinas")
+        if (
+            raw_disciplinas is None
+            or isinstance(raw_disciplinas, str | bytes | bytearray | memoryview | Mapping)
+            or not isinstance(raw_disciplinas, Iterable)
+        ):
+            raise ErroValidacaoDominio("'disciplinas' no snapshot de Taxonomia deve ser uma coleção de mapeamentos.")
+
+        disciplinas: list[Disciplina] = []
+        for item in raw_disciplinas:
+            if not isinstance(item, Mapping):
+                raise ErroValidacaoDominio(
+                    f"Item de 'disciplinas' no snapshot deve ser mapeamento; recebido: {item!r}."
+                )
+            disc_codigo = item.get("codigo")
+            disc_nome = item.get("nome")
+            disc_ementa = item.get("ementa", "")
+            disc_ativa = item.get("ativa", True)
+            if not isinstance(disc_codigo, str) or not isinstance(disc_nome, str):
+                raise ErroValidacaoDominio("Disciplina no snapshot exige 'codigo' e 'nome' textuais.")
+            if disc_ementa is None:
+                disc_ementa = ""
+            if not isinstance(disc_ementa, str):
+                raise ErroValidacaoDominio("'ementa' da Disciplina no snapshot deve ser string.")
+            if not isinstance(disc_ativa, bool):
+                raise ErroValidacaoDominio("'ativa' da Disciplina no snapshot deve ser booleano.")
+
+            raw_disc_id = item.get("id")
+            if raw_disc_id is None:
+                disc_id = uuid4()
+            elif isinstance(raw_disc_id, UUID):
+                disc_id = raw_disc_id
+            else:
+                try:
+                    disc_id = UUID(str(raw_disc_id))
+                except (ValueError, TypeError, AttributeError) as err:
+                    raise ErroValidacaoDominio(f"'id' inválido de Disciplina no snapshot: {raw_disc_id!r}.") from err
+
+            disciplinas.append(
+                Disciplina(
+                    id=disc_id,
+                    codigo=disc_codigo,
+                    nome=disc_nome,
+                    ementa=disc_ementa,
+                    ativa=disc_ativa,
+                )
+            )
+
+        return cls(
+            id=taxonomia_id,
+            codigo=codigo,
+            nome=nome,
+            curso_referencia=curso_referencia,
+            disciplinas=disciplinas,
+        )

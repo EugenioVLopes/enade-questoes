@@ -186,8 +186,14 @@ class CriarProvaUseCase:
 
         if perfil_id is not None and taxonomia_id is None:
             raise ErroValidacaoDominio("'perfil_id' só pode ser informado quando 'taxonomia_id' também for enviado.")
-        if taxonomia_id is not None and self._repo_taxonomias.buscar_por_id(taxonomia_id) is None:
-            raise RecursoNaoEncontradoError(f"Taxonomia '{taxonomia_id}' não encontrada.")
+        if taxonomia_id is not None:
+            taxonomia = self._repo_taxonomias.buscar_por_id(taxonomia_id)
+            if taxonomia is None:
+                raise RecursoNaoEncontradoError(f"Taxonomia '{taxonomia_id}' não encontrada.")
+            if not taxonomia.ativas():
+                raise ErroValidacaoDominio(
+                    f"Taxonomia '{taxonomia.codigo}' não possui disciplinas ativas para classificação encadeada."
+                )
         if perfil_id is not None and self._repo_perfis.buscar_por_id(perfil_id) is None:
             raise RecursoNaoEncontradoError(f"Perfil de classificação '{perfil_id}' não encontrado.")
 

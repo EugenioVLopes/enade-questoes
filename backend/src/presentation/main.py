@@ -4,9 +4,19 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from application.classificacao import ClassificarQuestaoService
+from application.execucoes_classificacao import (
+    CriarExecucaoClassificacaoUseCase,
+    DetalharExecucaoClassificacaoUseCase,
+    ExecutarLoteClassificacaoService,
+    HookClassificacaoEncadeada,
+    ListarExecucoesClassificacaoUseCase,
+    RetomarExecucaoClassificacaoUseCase,
+)
 from application.health import HealthUseCase
 from application.midia import ObterAtivoVisualArquivoUseCase, ObterPaginaProvaImagemUseCase
 from application.ports.armazenamento import ArmazenamentoArquivos
+from application.ports.classificacao import ClassificadorMultimodal
 from application.ports.extracao import ExtratorGabarito, ExtratorProva, RenderizadorPaginaPdf
 from application.provas import (
     AtualizarGabaritoUseCase,
@@ -15,6 +25,16 @@ from application.provas import (
     ObterProvaUseCase,
     ReprocessarProvaUseCase,
 )
+from application.taxonomias import (
+    AdicionarDisciplinaUseCase,
+    AtualizarDisciplinaUseCase,
+    AtualizarTaxonomiaUseCase,
+    CriarPerfilClassificacaoUseCase,
+    CriarTaxonomiaUseCase,
+    DetalharTaxonomiaUseCase,
+    ListarPerfisClassificacaoUseCase,
+    ListarTaxonomiasUseCase,
+)
 from application.worker import ClassificacaoEncadeadaHook, WorkerLocal
 from infrastructure.config import Settings
 from infrastructure.extracao import (
@@ -22,6 +42,7 @@ from infrastructure.extracao import (
     ExtratorProvaDocling,
     RenderizadorPaginaPdfPypdfium2,
 )
+from infrastructure.llm import criar_classificador_multimodal
 from infrastructure.persistence.database import (
     SqlAlchemyDatabaseProbe,
     create_db_engine,
@@ -29,6 +50,8 @@ from infrastructure.persistence.database import (
 )
 from infrastructure.persistence.repositorios import (
     RepositorioAtivosVisuaisSqlAlchemy,
+    RepositorioClassificacoesSqlAlchemy,
+    RepositorioDivergenciasReclassificacaoSqlAlchemy,
     RepositorioExecucoesClassificacaoSqlAlchemy,
     RepositorioIngestoesSqlAlchemy,
     RepositorioPerfisClassificacaoSqlAlchemy,
@@ -48,6 +71,7 @@ def build_app(
     renderizador: RenderizadorPaginaPdf | None = None,
     armazenamento: ArmazenamentoArquivos | None = None,
     classificacao_hook: ClassificacaoEncadeadaHook | None = None,
+    classificador: ClassificadorMultimodal | None = None,
 ) -> FastAPI:
     resolved_settings = settings or Settings()
     engine = create_db_engine(resolved_settings.database_url)
@@ -61,11 +85,18 @@ def build_app(
     repo_taxonomias = RepositorioTaxonomiasSqlAlchemy(session_factory)
     repo_perfis = RepositorioPerfisClassificacaoSqlAlchemy(session_factory)
     repo_execucoes = RepositorioExecucoesClassificacaoSqlAlchemy(session_factory)
+    repo_classificacoes = RepositorioClassificacoesSqlAlchemy(session_factory)
+    repo_divergencias = RepositorioDivergenciasReclassificacaoSqlAlchemy(session_factory)
 
     armazenamento_inst = armazenamento or ArmazenamentoArquivosLocal(resolved_settings.resolved_data_dir)
     extrator_prova_inst = extrator_prova or ExtratorProvaDocling()
     extrator_gabarito_inst = extrator_gabarito or ExtratorGabaritoPdfPlumber()
     renderizador_inst = renderizador or RenderizadorPaginaPdfPypdfium2()
+    classificador_inst = (
+        classificador
+        if classificador is not None
+        else criar_classificador_multimodal(resolved_settings, armazenamento=armazenamento_inst)
+    )
 
     worker = WorkerLocal(
         repo_provas=repo_provas,
@@ -125,6 +156,54 @@ def build_app(
         armazenamento=armazenamento_inst,
     )
 
+    listar_taxonomias_use_case = ListarTaxonomiasUseCase(repo_taxonomias)
+    detalhar_taxonomia_use_case = DetalharTaxonomiaUseCase(repo_taxonomias)
+    criar_taxonomia_use_case = CriarTaxonomiaUseCase(repo_taxonomias)
+    atualizar_taxonomia_use_case = AtualizarTaxonomiaUseCase(repo_taxonomias)
+    adicionar_disciplina_use_case = AdicionarDisciplinaUseCase(repo_taxonomias)
+    atualizar_disciplina_use_case = AtualizarDisciplinaUseCase(repo_taxonomias)
+
+    listar_perfis_use_case = ListarPerfisClassificacaoUseCase(repo_perfis)
+    criar_perfil_use_case = CriarPerfilClassificacaoUseCase(repo_perfis)
+
+    criar_execucao_use_case = CriarExecucaoClassificacaoUseCase(
+        repo_taxonomias=repo_taxonomias,
+        repo_perfis=repo_perfis,
+        repo_provas=repo_provas,
+        repo_questoes=repo_questoes,
+        repo_execucoes=repo_execucoes,
+        worker=worker,
+    )
+    listar_execucoes_use_case = ListarExecucoesClassificacaoUseCase(repo_execucoes)
+    detalhar_execucao_use_case = DetalharExecucaoClassificacaoUseCase(repo_execucoes)
+    retomar_execucao_use_case = RetomarExecucaoClassificacaoUseCase(
+        repo_execucoes=repo_execucoes,
+        repo_provas=repo_provas,
+        worker=worker,
+    )
+
+    classificar_questao_service = ClassificarQuestaoService(
+        classificador_inst,
+        armazenamento=armazenamento_inst,
+    )
+    executar_lote_service = ExecutarLoteClassificacaoService(
+        repo_execucoes=repo_execucoes,
+        repo_questoes=repo_questoes,
+        repo_provas=repo_provas,
+        repo_classificacoes=repo_classificacoes,
+        repo_divergencias=repo_divergencias,
+        classificar_questao=classificar_questao_service,
+    )
+    hook_efetivo = (
+        classificacao_hook
+        if classificacao_hook is not None
+        else HookClassificacaoEncadeada(
+            repo_perfis=repo_perfis,
+            criar_execucao=criar_execucao_use_case,
+        )
+    )
+    worker.configurar_classificacao(hook=hook_efetivo, executor=executar_lote_service)
+
     return create_app(
         health_use_case=health_use_case,
         worker=worker,
@@ -135,6 +214,18 @@ def build_app(
         reprocessar_prova_use_case=reprocessar_prova_use_case,
         obter_pagina_prova_use_case=obter_pagina_prova_use_case,
         obter_ativo_visual_use_case=obter_ativo_visual_use_case,
+        listar_taxonomias_use_case=listar_taxonomias_use_case,
+        detalhar_taxonomia_use_case=detalhar_taxonomia_use_case,
+        criar_taxonomia_use_case=criar_taxonomia_use_case,
+        atualizar_taxonomia_use_case=atualizar_taxonomia_use_case,
+        adicionar_disciplina_use_case=adicionar_disciplina_use_case,
+        atualizar_disciplina_use_case=atualizar_disciplina_use_case,
+        listar_perfis_use_case=listar_perfis_use_case,
+        criar_perfil_use_case=criar_perfil_use_case,
+        criar_execucao_use_case=criar_execucao_use_case,
+        listar_execucoes_use_case=listar_execucoes_use_case,
+        detalhar_execucao_use_case=detalhar_execucao_use_case,
+        retomar_execucao_use_case=retomar_execucao_use_case,
         on_shutdown=engine.dispose,
     )
 

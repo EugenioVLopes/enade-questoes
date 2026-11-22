@@ -11,7 +11,14 @@ from application.exceptions import (
     ArquivoPdfAusenteError,
     ConflitoEstadoIngestaoError,
     ConflitoProvaExistenteError,
+    ConflitoRecursoError,
     RecursoNaoEncontradoError,
+)
+from application.execucoes_classificacao import (
+    CriarExecucaoClassificacaoUseCase,
+    DetalharExecucaoClassificacaoUseCase,
+    ListarExecucoesClassificacaoUseCase,
+    RetomarExecucaoClassificacaoUseCase,
 )
 from application.health import HealthUseCase
 from application.midia import ObterAtivoVisualArquivoUseCase, ObterPaginaProvaImagemUseCase
@@ -22,6 +29,16 @@ from application.provas import (
     ObterProvaUseCase,
     ReprocessarProvaUseCase,
 )
+from application.taxonomias import (
+    AdicionarDisciplinaUseCase,
+    AtualizarDisciplinaUseCase,
+    AtualizarTaxonomiaUseCase,
+    CriarPerfilClassificacaoUseCase,
+    CriarTaxonomiaUseCase,
+    DetalharTaxonomiaUseCase,
+    ListarPerfisClassificacaoUseCase,
+    ListarTaxonomiasUseCase,
+)
 from application.worker import WorkerLocal
 from domain.exceptions import (
     ErroInvarianteDominio,
@@ -29,8 +46,16 @@ from domain.exceptions import (
     FaixaQuestoesIndisponivelError,
 )
 from presentation.api.v1.ativos_visuais import router as ativos_visuais_router
+from presentation.api.v1.execucoes_classificacao import router as execucoes_classificacao_router
 from presentation.api.v1.health import router as health_router
+from presentation.api.v1.perfis_classificacao import router as perfis_classificacao_router
 from presentation.api.v1.provas import router as provas_router
+from presentation.api.v1.taxonomias import (
+    disciplinas_router,
+)
+from presentation.api.v1.taxonomias import (
+    router as taxonomias_router,
+)
 
 
 def create_app(
@@ -44,6 +69,18 @@ def create_app(
     reprocessar_prova_use_case: ReprocessarProvaUseCase | None = None,
     obter_pagina_prova_use_case: ObterPaginaProvaImagemUseCase | None = None,
     obter_ativo_visual_use_case: ObterAtivoVisualArquivoUseCase | None = None,
+    listar_taxonomias_use_case: ListarTaxonomiasUseCase | None = None,
+    detalhar_taxonomia_use_case: DetalharTaxonomiaUseCase | None = None,
+    criar_taxonomia_use_case: CriarTaxonomiaUseCase | None = None,
+    atualizar_taxonomia_use_case: AtualizarTaxonomiaUseCase | None = None,
+    adicionar_disciplina_use_case: AdicionarDisciplinaUseCase | None = None,
+    atualizar_disciplina_use_case: AtualizarDisciplinaUseCase | None = None,
+    listar_perfis_use_case: ListarPerfisClassificacaoUseCase | None = None,
+    criar_perfil_use_case: CriarPerfilClassificacaoUseCase | None = None,
+    criar_execucao_use_case: CriarExecucaoClassificacaoUseCase | None = None,
+    listar_execucoes_use_case: ListarExecucoesClassificacaoUseCase | None = None,
+    detalhar_execucao_use_case: DetalharExecucaoClassificacaoUseCase | None = None,
+    retomar_execucao_use_case: RetomarExecucaoClassificacaoUseCase | None = None,
     on_shutdown: Callable[[], None] | None = None,
 ) -> FastAPI:
     @asynccontextmanager
@@ -94,6 +131,10 @@ def create_app(
     def _tratar_conflito_ingestao(_request: Request, exc: ConflitoEstadoIngestaoError) -> JSONResponse:
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
 
+    @app.exception_handler(ConflitoRecursoError)
+    def _tratar_conflito_recurso(_request: Request, exc: ConflitoRecursoError) -> JSONResponse:
+        return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
+
     @app.exception_handler(ErroInvarianteDominio)
     def _tratar_invariante(_request: Request, exc: ErroInvarianteDominio) -> JSONResponse:
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
@@ -119,8 +160,24 @@ def create_app(
     app.state.reprocessar_prova_use_case = reprocessar_prova_use_case
     app.state.obter_pagina_prova_use_case = obter_pagina_prova_use_case
     app.state.obter_ativo_visual_use_case = obter_ativo_visual_use_case
+    app.state.listar_taxonomias_use_case = listar_taxonomias_use_case
+    app.state.detalhar_taxonomia_use_case = detalhar_taxonomia_use_case
+    app.state.criar_taxonomia_use_case = criar_taxonomia_use_case
+    app.state.atualizar_taxonomia_use_case = atualizar_taxonomia_use_case
+    app.state.adicionar_disciplina_use_case = adicionar_disciplina_use_case
+    app.state.atualizar_disciplina_use_case = atualizar_disciplina_use_case
+    app.state.listar_perfis_use_case = listar_perfis_use_case
+    app.state.criar_perfil_use_case = criar_perfil_use_case
+    app.state.criar_execucao_use_case = criar_execucao_use_case
+    app.state.listar_execucoes_use_case = listar_execucoes_use_case
+    app.state.detalhar_execucao_use_case = detalhar_execucao_use_case
+    app.state.retomar_execucao_use_case = retomar_execucao_use_case
 
     app.include_router(health_router)
     app.include_router(provas_router)
     app.include_router(ativos_visuais_router)
+    app.include_router(taxonomias_router)
+    app.include_router(disciplinas_router)
+    app.include_router(perfis_classificacao_router)
+    app.include_router(execucoes_classificacao_router)
     return app

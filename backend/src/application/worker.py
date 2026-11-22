@@ -121,6 +121,18 @@ class WorkerLocal:
         self._thread: threading.Thread | None = None
         self._status = WorkerStatus()
 
+    def configurar_classificacao(
+        self,
+        *,
+        hook: ClassificacaoEncadeadaHook | None = None,
+        executor: ExecutorClassificacao | None = None,
+    ) -> None:
+        """Permite configurar hook pós-ingestão e executor de classificação após criação do worker."""
+        if hook is not None:
+            self._classificacao_hook = hook
+        if executor is not None:
+            self._classificacao_executor = executor
+
     def iniciar(self) -> None:
         """Executa recuperação de boot e inicia a thread consumidora única."""
         with self._lifecycle_lock:

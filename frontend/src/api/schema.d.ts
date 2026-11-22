@@ -124,6 +124,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/taxonomias": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista todas as Taxonomias com suas Disciplinas e impacto em classificações vigentes */
+        get: operations["listar_taxonomias_api_v1_taxonomias_get"];
+        put?: never;
+        /** Cria uma nova Taxonomia com Disciplinas iniciais opcionais */
+        post: operations["criar_taxonomia_api_v1_taxonomias_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taxonomias/{taxonomia_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtém os detalhes de uma Taxonomia e todas as suas Disciplinas */
+        get: operations["detalhar_taxonomia_api_v1_taxonomias__taxonomia_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Atualiza nome e curso de referência de uma Taxonomia (código imutável) */
+        patch: operations["atualizar_taxonomia_api_v1_taxonomias__taxonomia_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/taxonomias/{taxonomia_id}/disciplinas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Adiciona uma Disciplina a uma Taxonomia existente */
+        post: operations["adicionar_disciplina_api_v1_taxonomias__taxonomia_id__disciplinas_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/disciplinas/{disciplina_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Atualiza, arquiva ou reativa uma Disciplina expondo o impacto em classificações vigentes */
+        patch: operations["atualizar_disciplina_api_v1_disciplinas__disciplina_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/perfis-classificacao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista todas as versões imutáveis de Perfil de Classificação */
+        get: operations["listar_perfis_classificacao_api_v1_perfis_classificacao_get"];
+        put?: never;
+        /** Cria uma nova versão imutável de Perfil de Classificação (opcionalmente clonando perfil base) */
+        post: operations["criar_perfil_classificacao_api_v1_perfis_classificacao_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/execucoes-classificacao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lista as Execuções de Classificação com filtro opcional por Taxonomia */
+        get: operations["listar_execucoes_classificacao_api_v1_execucoes_classificacao_get"];
+        put?: never;
+        /** Congela snapshots de Taxonomia/Perfil, resolve escopo e enfileira uma Execução de Classificação */
+        post: operations["criar_execucao_classificacao_api_v1_execucoes_classificacao_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/execucoes-classificacao/{execucao_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtém os detalhes, progresso, erros por questão e snapshots congelados de uma Execução */
+        get: operations["detalhar_execucao_classificacao_api_v1_execucoes_classificacao__execucao_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/execucoes-classificacao/{execucao_id}/retomar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reenfileira a retomada de uma Execução interrompida ou concluída com erros */
+        post: operations["retomar_execucao_classificacao_api_v1_execucoes_classificacao__execucao_id__retomar_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -208,10 +348,246 @@ export interface components {
             /** Gabarito Pendentes */
             gabarito_pendentes: number;
         };
+        /** DisciplinaAtualizarRequest */
+        DisciplinaAtualizarRequest: {
+            /** Nome */
+            nome?: string | null;
+            /** Ementa */
+            ementa?: string | null;
+            /** Ativa */
+            ativa?: boolean | null;
+            /** Ordem */
+            ordem?: number | null;
+        };
+        /** DisciplinaCriacaoInput */
+        DisciplinaCriacaoInput: {
+            /** Codigo */
+            codigo: string;
+            /** Nome */
+            nome: string;
+            /**
+             * Ementa
+             * @default
+             */
+            ementa: string;
+            /**
+             * Ativa
+             * @default true
+             */
+            ativa: boolean;
+        };
+        /** DisciplinaCriarRequest */
+        DisciplinaCriarRequest: {
+            /** Codigo */
+            codigo: string;
+            /** Nome */
+            nome: string;
+            /**
+             * Ementa
+             * @default
+             */
+            ementa: string;
+            /**
+             * Ativa
+             * @default true
+             */
+            ativa: boolean;
+            /** Ordem */
+            ordem?: number | null;
+        };
+        /** DisciplinaResponse */
+        DisciplinaResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Taxonomia Id
+             * Format: uuid
+             */
+            taxonomia_id: string;
+            /** Codigo */
+            codigo: string;
+            /** Nome */
+            nome: string;
+            /** Ementa */
+            ementa: string;
+            /** Ativa */
+            ativa: boolean;
+            /** Classificacoes Vigentes Impactadas */
+            classificacoes_vigentes_impactadas: number;
+        };
         /** ErroDetalheResponse */
         ErroDetalheResponse: {
             /** Detail */
             detail: string;
+        };
+        /** @enum {string} */
+        EscopoExecucaoLiteral: "todas" | "prova_id" | "pendentes" | "disciplina_arquivada" | "questao_ids";
+        /** ExecucaoClassificacaoAceitaResponse */
+        ExecucaoClassificacaoAceitaResponse: {
+            /**
+             * Execucao Id
+             * Format: uuid
+             */
+            execucao_id: string;
+            /**
+             * Taxonomia Id
+             * Format: uuid
+             */
+            taxonomia_id: string;
+            /**
+             * Perfil Id
+             * Format: uuid
+             */
+            perfil_id: string;
+            escopo: components["schemas"]["EscopoExecucaoLiteral"];
+            /** Escopo Prova Id */
+            escopo_prova_id?: string | null;
+            /** Escopo Questao Ids */
+            escopo_questao_ids: string[];
+            /** Incluir Revisadas */
+            incluir_revisadas: boolean;
+            status: components["schemas"]["StatusExecucaoLiteral"];
+            /** Total Itens */
+            total_itens: number;
+            /** Processadas */
+            processadas: number;
+        };
+        /** ExecucaoClassificacaoCriarRequest */
+        ExecucaoClassificacaoCriarRequest: {
+            /**
+             * Taxonomia Id
+             * Format: uuid
+             */
+            taxonomia_id: string;
+            /**
+             * Perfil Id
+             * Format: uuid
+             */
+            perfil_id: string;
+            /** @default todas */
+            escopo: components["schemas"]["EscopoExecucaoLiteral"];
+            /**
+             * Incluir Revisadas
+             * @default false
+             */
+            incluir_revisadas: boolean;
+            /** Prova Id */
+            prova_id?: string | null;
+            /** Questao Ids */
+            questao_ids?: string[];
+        };
+        /** ExecucaoClassificacaoDetalheResponse */
+        ExecucaoClassificacaoDetalheResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Taxonomia Id
+             * Format: uuid
+             */
+            taxonomia_id: string;
+            /**
+             * Perfil Id
+             * Format: uuid
+             */
+            perfil_id: string;
+            escopo: components["schemas"]["EscopoExecucaoLiteral"];
+            /** Escopo Prova Id */
+            escopo_prova_id?: string | null;
+            /** Escopo Questao Ids */
+            escopo_questao_ids: string[];
+            /** Incluir Revisadas */
+            incluir_revisadas: boolean;
+            status: components["schemas"]["StatusExecucaoLiteral"];
+            /** Total Itens */
+            total_itens: number;
+            /** Processadas */
+            processadas: number;
+            /** Total Erros */
+            total_erros: number;
+            /** Divergencias Abertas */
+            divergencias_abertas: number;
+            /** Cache Hits */
+            cache_hits: number;
+            /** Prompt Tokens */
+            prompt_tokens: number;
+            /** Completion Tokens */
+            completion_tokens: number;
+            /** Criada Em */
+            criada_em?: string | null;
+            /** Iniciada Em */
+            iniciada_em?: string | null;
+            /** Concluida Em */
+            concluida_em?: string | null;
+            snapshot_resumo: components["schemas"]["SnapshotExecucaoResumoResponse"];
+            /** Erros Por Questao */
+            erros_por_questao: {
+                [key: string]: string;
+            };
+            /** Snapshot Taxonomia */
+            snapshot_taxonomia: {
+                [key: string]: unknown;
+            };
+            /** Snapshot Perfil */
+            snapshot_perfil: {
+                [key: string]: unknown;
+            };
+            /** Questao Ids Alvo */
+            questao_ids_alvo: string[];
+            /** Questao Ids Concluidas */
+            questao_ids_concluidas: string[];
+        };
+        /** ExecucaoClassificacaoResumoResponse */
+        ExecucaoClassificacaoResumoResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Taxonomia Id
+             * Format: uuid
+             */
+            taxonomia_id: string;
+            /**
+             * Perfil Id
+             * Format: uuid
+             */
+            perfil_id: string;
+            escopo: components["schemas"]["EscopoExecucaoLiteral"];
+            /** Escopo Prova Id */
+            escopo_prova_id?: string | null;
+            /** Escopo Questao Ids */
+            escopo_questao_ids: string[];
+            /** Incluir Revisadas */
+            incluir_revisadas: boolean;
+            status: components["schemas"]["StatusExecucaoLiteral"];
+            /** Total Itens */
+            total_itens: number;
+            /** Processadas */
+            processadas: number;
+            /** Total Erros */
+            total_erros: number;
+            /** Divergencias Abertas */
+            divergencias_abertas: number;
+            /** Cache Hits */
+            cache_hits: number;
+            /** Prompt Tokens */
+            prompt_tokens: number;
+            /** Completion Tokens */
+            completion_tokens: number;
+            /** Criada Em */
+            criada_em?: string | null;
+            /** Iniciada Em */
+            iniciada_em?: string | null;
+            /** Concluida Em */
+            concluida_em?: string | null;
+            snapshot_resumo: components["schemas"]["SnapshotExecucaoResumoResponse"];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -254,10 +630,31 @@ export interface components {
             criada_em?: string | null;
             metadados: components["schemas"]["MetadadosIngestaoResponse"];
         };
+        /** ListaExecucoesClassificacaoResponse */
+        ListaExecucoesClassificacaoResponse: {
+            /** Itens */
+            itens: components["schemas"]["ExecucaoClassificacaoResumoResponse"][];
+            /** Total */
+            total: number;
+        };
+        /** ListaPerfisClassificacaoResponse */
+        ListaPerfisClassificacaoResponse: {
+            /** Itens */
+            itens: components["schemas"]["PerfilClassificacaoResponse"][];
+            /** Total */
+            total: number;
+        };
         /** ListaProvasResponse */
         ListaProvasResponse: {
             /** Itens */
             itens: components["schemas"]["ProvaDetalheResponse"][];
+            /** Total */
+            total: number;
+        };
+        /** ListaTaxonomiasResponse */
+        ListaTaxonomiasResponse: {
+            /** Itens */
+            itens: components["schemas"]["TaxonomiaResponse"][];
             /** Total */
             total: number;
         };
@@ -277,6 +674,45 @@ export interface components {
             paginas_fonte_symbol: number[];
             /** Gabarito Enviado */
             gabarito_enviado: boolean;
+        };
+        /** PerfilClassificacaoCriarRequest */
+        PerfilClassificacaoCriarRequest: {
+            /** Versao */
+            versao: string;
+            /** Codigo */
+            codigo?: string | null;
+            /** Perfil Base Id */
+            perfil_base_id?: string | null;
+            /** Diretrizes Gerais */
+            diretrizes_gerais?: string | null;
+            /** Guia Fronteiras */
+            guia_fronteiras?: string | null;
+            /** Template Prompt */
+            template_prompt?: string | null;
+            /** Descricao */
+            descricao?: string | null;
+        };
+        /** PerfilClassificacaoResponse */
+        PerfilClassificacaoResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Codigo */
+            codigo: string;
+            /** Versao */
+            versao: string;
+            /** Diretrizes Gerais */
+            diretrizes_gerais: string;
+            /** Guia Fronteiras */
+            guia_fronteiras: string;
+            /** Template Prompt */
+            template_prompt: string;
+            /** Descricao */
+            descricao: string;
+            /** Criado Em */
+            criado_em?: string | null;
         };
         /** ProvaDetalheResponse */
         ProvaDetalheResponse: {
@@ -376,6 +812,82 @@ export interface components {
             sem_correspondencia: number[];
             /** Questoes Sem Gabarito */
             questoes_sem_gabarito: number[];
+        };
+        /** SnapshotExecucaoResumoResponse */
+        SnapshotExecucaoResumoResponse: {
+            taxonomia: components["schemas"]["SnapshotTaxonomiaResumoResponse"];
+            perfil: components["schemas"]["SnapshotPerfilResumoResponse"];
+        };
+        /** SnapshotPerfilResumoResponse */
+        SnapshotPerfilResumoResponse: {
+            /** Id */
+            id?: string | null;
+            /** Codigo */
+            codigo: string;
+            /** Versao */
+            versao: string;
+            /**
+             * Descricao
+             * @default
+             */
+            descricao: string;
+        };
+        /** SnapshotTaxonomiaResumoResponse */
+        SnapshotTaxonomiaResumoResponse: {
+            /** Id */
+            id?: string | null;
+            /** Codigo */
+            codigo: string;
+            /** Nome */
+            nome: string;
+            /**
+             * Curso Referencia
+             * @default
+             */
+            curso_referencia: string;
+            /** Total Disciplinas */
+            total_disciplinas: number;
+            /** Disciplinas Codigos */
+            disciplinas_codigos?: string[];
+        };
+        /** @enum {string} */
+        StatusExecucaoLiteral: "pendente" | "processando" | "concluida" | "concluida_com_erros" | "interrompida" | "erro";
+        /** TaxonomiaAtualizarRequest */
+        TaxonomiaAtualizarRequest: {
+            /** Nome */
+            nome?: string | null;
+            /** Curso Referencia */
+            curso_referencia?: string | null;
+        };
+        /** TaxonomiaCriarRequest */
+        TaxonomiaCriarRequest: {
+            /** Codigo */
+            codigo: string;
+            /** Nome */
+            nome: string;
+            /**
+             * Curso Referencia
+             * @default
+             */
+            curso_referencia: string;
+            /** Disciplinas */
+            disciplinas?: components["schemas"]["DisciplinaCriacaoInput"][];
+        };
+        /** TaxonomiaResponse */
+        TaxonomiaResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Codigo */
+            codigo: string;
+            /** Nome */
+            nome: string;
+            /** Curso Referencia */
+            curso_referencia: string;
+            /** Disciplinas */
+            disciplinas: components["schemas"]["DisciplinaResponse"][];
         };
         /** ValidationError */
         ValidationError: {
@@ -748,6 +1260,482 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listar_taxonomias_api_v1_taxonomias_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaTaxonomiasResponse"];
+                };
+            };
+        };
+    };
+    criar_taxonomia_api_v1_taxonomias_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxonomiaCriarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomiaResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    detalhar_taxonomia_api_v1_taxonomias__taxonomia_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taxonomia_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomiaResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    atualizar_taxonomia_api_v1_taxonomias__taxonomia_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taxonomia_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaxonomiaAtualizarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomiaResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    adicionar_disciplina_api_v1_taxonomias__taxonomia_id__disciplinas_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taxonomia_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisciplinaCriarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplinaResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    atualizar_disciplina_api_v1_disciplinas__disciplina_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                disciplina_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisciplinaAtualizarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplinaResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    listar_perfis_classificacao_api_v1_perfis_classificacao_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaPerfisClassificacaoResponse"];
+                };
+            };
+        };
+    };
+    criar_perfil_classificacao_api_v1_perfis_classificacao_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PerfilClassificacaoCriarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilClassificacaoResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    listar_execucoes_classificacao_api_v1_execucoes_classificacao_get: {
+        parameters: {
+            query?: {
+                taxonomia_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaExecucoesClassificacaoResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    criar_execucao_classificacao_api_v1_execucoes_classificacao_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecucaoClassificacaoCriarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecucaoClassificacaoAceitaResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    detalhar_execucao_classificacao_api_v1_execucoes_classificacao__execucao_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execucao_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecucaoClassificacaoDetalheResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retomar_execucao_classificacao_api_v1_execucoes_classificacao__execucao_id__retomar_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execucao_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExecucaoClassificacaoAceitaResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

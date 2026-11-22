@@ -16,7 +16,7 @@ from domain.classificacao import (
 )
 from domain.enums import ResolucaoDivergencia, StatusClassificacao, StatusDivergencia
 from domain.prova import AtivoVisual, Ingestao, Prova, Questao
-from domain.taxonomia import Taxonomia
+from domain.taxonomia import Disciplina, Taxonomia
 
 
 @runtime_checkable
@@ -55,6 +55,14 @@ class RepositorioQuestoes(Protocol):
 
     def listar_por_prova(self, prova_id: UUID) -> list[Questao]: ...
 
+    def listar_todas(self) -> list[Questao]: ...
+
+    def listar_pendentes_classificacao(self, taxonomia_id: UUID) -> list[Questao]: ...
+
+    def listar_com_disciplina_arquivada(self, taxonomia_id: UUID) -> list[Questao]: ...
+
+    def listar_por_ids(self, questao_ids: Sequence[UUID]) -> list[Questao]: ...
+
 
 @runtime_checkable
 class RepositorioAtivosVisuais(Protocol):
@@ -77,11 +85,36 @@ class RepositorioTaxonomias(Protocol):
 
     def listar(self) -> list[Taxonomia]: ...
 
+    def buscar_disciplina_por_id(self, disciplina_id: UUID) -> tuple[UUID, Disciplina] | None: ...
+
+    def adicionar_disciplina(
+        self,
+        taxonomia_id: UUID,
+        disciplina: Disciplina,
+        *,
+        ordem: int | None = None,
+    ) -> Disciplina: ...
+
+    def salvar_disciplina(
+        self,
+        taxonomia_id: UUID,
+        disciplina: Disciplina,
+        *,
+        ordem: int | None = None,
+    ) -> Disciplina: ...
+
     def contar_classificacoes_vigentes_por_disciplina(
         self,
         taxonomia_id: UUID,
         disciplina_codigo: str,
     ) -> int: ...
+
+    def contar_classificacoes_vigentes_por_disciplinas(self, taxonomia_id: UUID) -> dict[str, int]: ...
+
+    def contar_classificacoes_vigentes_por_taxonomias(
+        self,
+        taxonomia_ids: Sequence[UUID],
+    ) -> dict[UUID, dict[str, int]]: ...
 
 
 @runtime_checkable
@@ -101,7 +134,7 @@ class RepositorioExecucoesClassificacao(Protocol):
 
     def buscar_por_id(self, execucao_id: UUID) -> ExecucaoClassificacao | None: ...
 
-    def listar(self) -> list[ExecucaoClassificacao]: ...
+    def listar(self, *, taxonomia_id: UUID | None = None) -> list[ExecucaoClassificacao]: ...
 
     def marcar_em_processamento_como_interrompidas(self, agora: datetime) -> int: ...
 

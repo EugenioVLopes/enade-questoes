@@ -334,6 +334,26 @@ class ExecucaoClassificacaoModel(Base):
     criada_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
     iniciada_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     concluida_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    escopo_prova_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("provas.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    escopo_questao_ids: Mapped[list[str]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'[]'::jsonb"),
+    )
+    questao_ids_alvo: Mapped[list[str]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'[]'::jsonb"),
+    )
+    questao_ids_concluidas: Mapped[list[str]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'[]'::jsonb"),
+    )
 
     __table_args__ = (
         CheckConstraint(
