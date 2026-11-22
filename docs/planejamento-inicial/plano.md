@@ -1,6 +1,6 @@
 # Plano — Enade Questões (v1)
 
-Status: **em andamento** (Fase 1 / Checkpoint 1 concluídos: Tarefas 01, 02 e 03 entregues; Fase 2 em andamento: Tarefas 04, 05 e 06 concluídas).
+Status: **em andamento** (Fase 1 / Checkpoint 1 e Fase 2 / Checkpoint 2 concluídos: Tarefas 01 a 07 entregues; Fase 3 pronta para iniciar).
 
 Pedido original e critérios de aceite da fase de planejamento: [task.md](task.md).
 Mapa de decisões (11/11 tickets resolvidos): [mapa.md](mapa.md).
@@ -80,10 +80,10 @@ Cada tarefa é um arquivo independente em `tarefas/` executável em uma sessão 
 | 06 | [Classificador multimodal OpenAI-compatível, cache determinístico e travas](tarefas/06-classificador-multimodal-cache-travas.md) | Backend | 02, 03 |
 | 07 | [API de Taxonomias, Perfis de Classificação e Execuções de Classificação](tarefas/07-api-taxonomias-perfis-execucoes.md) | Backend | 03, 05, 06 |
 
-**Checkpoint 2 — Pipeline Backend Ponta a Ponta**:
-- Ingestão de prova real (`data/enade/2023/`) via `POST /api/v1/provas` extrai 29 questões do CE, gabarito, `Ativo Visual`s e `Alerta de Extração`s devolvendo RAM do subprocesso Docling ao SO;
-- Encadeamento e disparo isolado de `Execução de Classificação` gravam classificações com snapshot congelado, cache LLM e tratamento de `Divergência de Reclassificação`;
-- `make types` gera os tipos TypeScript sem erros a partir do OpenAPI.
+**Checkpoint 2 — Pipeline Backend Ponta a Ponta** (**concluído**):
+- [x] Ingestão de prova real (`data/enade/2023/`) via `POST /api/v1/provas` extrai 29 questões do CE, gabarito, `Ativo Visual`s e `Alerta de Extração`s devolvendo RAM do subprocesso Docling ao SO;
+- [x] Encadeamento e disparo isolado de `Execução de Classificação` gravam classificações com snapshot congelado, cache LLM e tratamento de `Divergência de Reclassificação`;
+- [x] `make types` gera os tipos TypeScript sem erros a partir do OpenAPI.
 
 ### Fase 3 — Consulta, Revisão Humana, Edição de Conteúdo/Mídia e Interface Web
 
