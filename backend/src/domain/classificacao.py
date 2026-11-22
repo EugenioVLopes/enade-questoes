@@ -489,35 +489,64 @@ class Classificacao:
         if not self.vigente:
             raise ErroInvarianteDominio("Só é possível substituir uma classificação vigente.")
 
-        topicos_validados = _validar_colecao_strings(topicos, "topicos")
-        topicos_normalizados: list[str] = []
-        vistos: set[str] = set()
-        for raw in topicos_validados:
-            norm = normalizar_topico(raw)
-            if norm and norm not in vistos:
-                vistos.add(norm)
-                topicos_normalizados.append(norm)
-
-        nova = Classificacao(
+        nova = criar_classificacao_humana(
             questao_id=self.questao_id,
             taxonomia_id=self.taxonomia_id,
             disciplina_principal=disciplina_principal,
-            disciplinas_secundarias=disciplinas_secundarias,  # type: ignore[arg-type]
-            topicos=tuple(topicos_normalizados),
-            justificativa=justificativa.strip(),
+            disciplinas_secundarias=disciplinas_secundarias,
+            topicos=topicos,
+            justificativa=justificativa,
+            agora=agora,
             confianca=confianca,
-            origem=OrigemClassificacao.HUMANA,
-            status=StatusClassificacao.APROVADA,
-            vigente=True,
-            revisao_prioritaria=False,
-            execucao_id=None,
             substitui_classificacao_id=self.id,
-            alertas_validacao=(),
-            criada_em=agora,
-            revisada_em=agora,
         )
         self.vigente = False
         return nova
+
+
+def normalizar_topicos_curadoria(topicos: Iterable[str]) -> tuple[str, ...]:
+    """Normaliza tópicos informados na curadoria humana (0..N, kebab-case ASCII, sem duplicatas)."""
+    normalizados: list[str] = []
+    for raw in _validar_colecao_strings(topicos, "topicos"):
+        norm = normalizar_topico(raw)
+        if not norm:
+            raise ErroValidacaoDominio(f"Tópico inválido ou vazio após normalização: {raw!r}.")
+        if norm not in normalizados:
+            normalizados.append(norm)
+    return tuple(normalizados)
+
+
+def criar_classificacao_humana(
+    *,
+    questao_id: UUID,
+    taxonomia_id: UUID,
+    disciplina_principal: str,
+    disciplinas_secundarias: Iterable[str] = (),
+    topicos: Iterable[str] = (),
+    justificativa: str = "",
+    agora: datetime,
+    confianca: float = 1.0,
+    substitui_classificacao_id: UUID | None = None,
+) -> Classificacao:
+    """Cria uma Classificação humana aprovada e vigente (correção ou classificação manual inicial)."""
+    return Classificacao(
+        questao_id=questao_id,
+        taxonomia_id=taxonomia_id,
+        disciplina_principal=disciplina_principal,
+        disciplinas_secundarias=disciplinas_secundarias,  # type: ignore[arg-type]
+        topicos=normalizar_topicos_curadoria(topicos),
+        justificativa=justificativa.strip(),
+        confianca=confianca,
+        origem=OrigemClassificacao.HUMANA,
+        status=StatusClassificacao.APROVADA,
+        vigente=True,
+        revisao_prioritaria=False,
+        execucao_id=None,
+        substitui_classificacao_id=substitui_classificacao_id,
+        alertas_validacao=(),
+        criada_em=agora,
+        revisada_em=agora,
+    )
 
 
 @dataclass(slots=True)

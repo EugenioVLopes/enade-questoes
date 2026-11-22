@@ -25,6 +25,20 @@ from application.provas import (
     ObterProvaUseCase,
     ReprocessarProvaUseCase,
 )
+from application.questoes import (
+    AdicionarAtivoVisualUseCase,
+    AtualizarAtivoVisualUseCase,
+    ConsultarQuestoesUseCase,
+    DetalharQuestaoUseCase,
+    EditarConteudoQuestaoUseCase,
+    RemoverAtivoVisualUseCase,
+    ResolverAlertaExtracaoUseCase,
+)
+from application.revisao import (
+    AprovarClassificacaoUseCase,
+    CorrigirClassificacaoUseCase,
+    ResolverDivergenciaUseCase,
+)
 from application.taxonomias import (
     AdicionarDisciplinaUseCase,
     AtualizarDisciplinaUseCase,
@@ -42,7 +56,9 @@ from infrastructure.extracao import (
     ExtratorProvaDocling,
     RenderizadorPaginaPdfPypdfium2,
 )
+from infrastructure.imagem import NormalizadorImagemPillow
 from infrastructure.llm import criar_classificador_multimodal
+from infrastructure.persistence.consulta_questoes import ConsultaQuestoesSqlAlchemy
 from infrastructure.persistence.database import (
     SqlAlchemyDatabaseProbe,
     create_db_engine,
@@ -182,6 +198,47 @@ def build_app(
         worker=worker,
     )
 
+    consulta_questoes = ConsultaQuestoesSqlAlchemy(session_factory)
+    normalizador_imagem = NormalizadorImagemPillow()
+    ativos_deps = {
+        "repo_questoes": repo_questoes,
+        "repo_ativos": repo_ativos,
+        "armazenamento": armazenamento_inst,
+        "normalizador": normalizador_imagem,
+    }
+    consultar_questoes_use_case = ConsultarQuestoesUseCase(consulta=consulta_questoes, repo_taxonomias=repo_taxonomias)
+    detalhar_questao_use_case = DetalharQuestaoUseCase(
+        repo_questoes=repo_questoes,
+        repo_provas=repo_provas,
+        repo_taxonomias=repo_taxonomias,
+        repo_classificacoes=repo_classificacoes,
+        consulta=consulta_questoes,
+    )
+    aprovar_classificacao_use_case = AprovarClassificacaoUseCase(
+        repo_questoes=repo_questoes, repo_classificacoes=repo_classificacoes
+    )
+    corrigir_classificacao_use_case = CorrigirClassificacaoUseCase(
+        repo_questoes=repo_questoes,
+        repo_taxonomias=repo_taxonomias,
+        repo_classificacoes=repo_classificacoes,
+        consulta=consulta_questoes,
+    )
+    resolver_divergencia_use_case = ResolverDivergenciaUseCase(
+        repo_questoes=repo_questoes,
+        repo_taxonomias=repo_taxonomias,
+        repo_classificacoes=repo_classificacoes,
+        repo_divergencias=repo_divergencias,
+    )
+    editar_questao_use_case = EditarConteudoQuestaoUseCase(
+        repo_questoes=repo_questoes, repo_provas=repo_provas, repo_classificacoes=repo_classificacoes
+    )
+    resolver_alerta_use_case = ResolverAlertaExtracaoUseCase(
+        repo_questoes=repo_questoes, repo_classificacoes=repo_classificacoes
+    )
+    adicionar_ativo_visual_use_case = AdicionarAtivoVisualUseCase(**ativos_deps)
+    atualizar_ativo_visual_use_case = AtualizarAtivoVisualUseCase(**ativos_deps)
+    remover_ativo_visual_use_case = RemoverAtivoVisualUseCase(**ativos_deps)
+
     classificar_questao_service = ClassificarQuestaoService(
         classificador_inst,
         armazenamento=armazenamento_inst,
@@ -226,6 +283,16 @@ def build_app(
         listar_execucoes_use_case=listar_execucoes_use_case,
         detalhar_execucao_use_case=detalhar_execucao_use_case,
         retomar_execucao_use_case=retomar_execucao_use_case,
+        consultar_questoes_use_case=consultar_questoes_use_case,
+        detalhar_questao_use_case=detalhar_questao_use_case,
+        aprovar_classificacao_use_case=aprovar_classificacao_use_case,
+        corrigir_classificacao_use_case=corrigir_classificacao_use_case,
+        resolver_divergencia_use_case=resolver_divergencia_use_case,
+        editar_questao_use_case=editar_questao_use_case,
+        resolver_alerta_use_case=resolver_alerta_use_case,
+        adicionar_ativo_visual_use_case=adicionar_ativo_visual_use_case,
+        atualizar_ativo_visual_use_case=atualizar_ativo_visual_use_case,
+        remover_ativo_visual_use_case=remover_ativo_visual_use_case,
         on_shutdown=engine.dispose,
     )
 

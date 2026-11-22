@@ -107,6 +107,7 @@ class QuestaoModel(Base):
         nullable=False,
         server_default=text("false"),
     )
+    versao: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
     busca_tsv: Mapped[Any] = mapped_column(TSVECTOR, nullable=True)
 
     alternativas: Mapped[list[AlternativaModel]] = relationship(
@@ -445,6 +446,11 @@ class ClassificacaoModel(Base):
         Index("ix_classificacoes_historico", "questao_id", "taxonomia_id", text("criada_em DESC")),
         Index("ix_classificacoes_disciplinas_secundarias_gin", "disciplinas_secundarias", postgresql_using="gin"),
         Index("ix_classificacoes_topicos_gin", "topicos", postgresql_using="gin"),
+        Index(
+            "ix_classificacoes_topicos_trgm",
+            text("(topicos::text) gin_trgm_ops"),
+            postgresql_using="gin",
+        ),
         Index(
             "ix_classificacoes_topicos_tsv",
             text("jsonb_to_tsvector('pt_unaccent', topicos, '[\"string\"]')"),

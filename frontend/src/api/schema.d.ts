@@ -107,6 +107,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/questoes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consulta Questões com busca textual/trigrama, filtros combináveis, paginação e contadores de abas */
+        get: operations["listar_questoes_api_v1_questoes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/questoes/{questao_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Detalha uma Questão com classificação vigente, divergência aberta e histórico na Taxonomia solicitada */
+        get: operations["obter_questao_api_v1_questoes__questao_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edita enunciado, Alternativas e Gabarito e reavalia os alertas estruturais (sem acionar LLM) */
+        patch: operations["editar_questao_api_v1_questoes__questao_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/questoes/{questao_id}/classificacoes/{taxonomia_id}/aprovar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Aprova in-place a Classificação vigente pendente de revisão */
+        post: operations["aprovar_classificacao_api_v1_questoes__questao_id__classificacoes__taxonomia_id__aprovar_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/questoes/{questao_id}/classificacoes/{taxonomia_id}/corrigir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cria Classificação humana vigente que substitui a atual, preservando a predição da IA */
+        post: operations["corrigir_classificacao_api_v1_questoes__questao_id__classificacoes__taxonomia_id__corrigir_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/questoes/{questao_id}/divergencias/{divergencia_id}/resolver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve atomicamente uma Divergência de Reclassificação aberta */
+        post: operations["resolver_divergencia_api_v1_questoes__questao_id__divergencias__divergencia_id__resolver_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/questoes/{questao_id}/alertas/{alerta_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Marca como resolvido um alerta de inspeção (pdf_via_ocr, fonte_symbol_detectada) */
+        patch: operations["atualizar_alerta_api_v1_questoes__questao_id__alertas__alerta_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/questoes/{questao_id}/ativos-visuais": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Envia manualmente um Ativo Visual (PNG/JPEG) para a Questão */
+        post: operations["adicionar_ativo_visual_api_v1_questoes__questao_id__ativos_visuais_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ativos-visuais/{ativo_id}/arquivo": {
         parameters: {
             query?: never;
@@ -122,6 +242,24 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ativos-visuais/{ativo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove um Ativo Visual e seu arquivo do armazenamento */
+        delete: operations["remover_ativo_visual_api_v1_ativos_visuais__ativo_id__delete"];
+        options?: never;
+        head?: never;
+        /** Reordena, altera a alternativa associada ou substitui a imagem de um Ativo Visual */
+        patch: operations["atualizar_ativo_visual_api_v1_ativos_visuais__ativo_id__patch"];
         trace?: never;
     };
     "/api/v1/taxonomias": {
@@ -268,6 +406,78 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AlertaExtracaoResponse */
+        AlertaExtracaoResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            codigo: components["schemas"]["CodigoAlertaExtracao"];
+            severidade: components["schemas"]["SeveridadeAlerta"];
+            status: components["schemas"]["StatusAlerta"];
+            /** Mensagem */
+            mensagem: string;
+            /** Resolvido Em */
+            resolvido_em?: string | null;
+        };
+        /** AlternativaEdicaoRequest */
+        AlternativaEdicaoRequest: {
+            letra: components["schemas"]["LetraAlternativa"];
+            /** Texto */
+            texto: string;
+        };
+        /** AlternativaResponse */
+        AlternativaResponse: {
+            letra: components["schemas"]["LetraAlternativa"];
+            /** Texto */
+            texto: string;
+        };
+        /** AtivoVisualResponse */
+        AtivoVisualResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            origem: components["schemas"]["OrigemAtivoVisual"];
+            alternativa_letra?: components["schemas"]["LetraAlternativa"] | null;
+            /** Ordem */
+            ordem: number;
+            /** Pagina */
+            pagina?: number | null;
+            /** Url Arquivo */
+            url_arquivo: string;
+        };
+        /** AtualizarAlertaRequest */
+        AtualizarAlertaRequest: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "resolvido";
+        };
+        /** Body_adicionar_ativo_visual_api_v1_questoes__questao_id__ativos_visuais_post */
+        Body_adicionar_ativo_visual_api_v1_questoes__questao_id__ativos_visuais_post: {
+            /** Arquivo */
+            arquivo: string;
+            alternativa_letra?: components["schemas"]["LetraAlternativa"] | null;
+            /** Ordem */
+            ordem?: number | null;
+        };
+        /** Body_atualizar_ativo_visual_api_v1_ativos_visuais__ativo_id__patch */
+        Body_atualizar_ativo_visual_api_v1_ativos_visuais__ativo_id__patch: {
+            /** Arquivo */
+            arquivo?: string | null;
+            alternativa_letra?: components["schemas"]["LetraAlternativa"] | null;
+            /**
+             * Remover Alternativa Letra
+             * @default false
+             */
+            remover_alternativa_letra: boolean;
+            /** Ordem */
+            ordem?: number | null;
+        };
         /** Body_atualizar_gabarito_api_v1_provas__prova_id__gabarito_put */
         Body_atualizar_gabarito_api_v1_provas__prova_id__gabarito_put: {
             /** Arquivo Gabarito */
@@ -310,6 +520,88 @@ export interface components {
             /** Status */
             status?: string | null;
         };
+        /** ClassificacaoOutraTaxonomiaResponse */
+        ClassificacaoOutraTaxonomiaResponse: {
+            /**
+             * Taxonomia Id
+             * Format: uuid
+             */
+            taxonomia_id: string;
+            /** Taxonomia Codigo */
+            taxonomia_codigo: string;
+            /** Taxonomia Nome */
+            taxonomia_nome: string;
+            classificacao: components["schemas"]["ClassificacaoResponse"];
+        };
+        /** ClassificacaoResponse */
+        ClassificacaoResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Questao Id
+             * Format: uuid
+             */
+            questao_id: string;
+            /**
+             * Taxonomia Id
+             * Format: uuid
+             */
+            taxonomia_id: string;
+            /** Disciplina Principal */
+            disciplina_principal: string;
+            /** Disciplinas Secundarias */
+            disciplinas_secundarias: string[];
+            /** Topicos */
+            topicos: string[];
+            /** Justificativa */
+            justificativa: string;
+            /** Confianca */
+            confianca: number;
+            origem: components["schemas"]["OrigemClassificacao"];
+            status: components["schemas"]["StatusClassificacao"];
+            /** Vigente */
+            vigente: boolean;
+            /** Revisao Prioritaria */
+            revisao_prioritaria: boolean;
+            /** Execucao Id */
+            execucao_id?: string | null;
+            /** Substitui Classificacao Id */
+            substitui_classificacao_id?: string | null;
+            /** Alertas Validacao */
+            alertas_validacao: string[];
+            /** Criada Em */
+            criada_em?: string | null;
+            /** Revisada Em */
+            revisada_em?: string | null;
+        };
+        /** ClassificacaoResumoResponse */
+        ClassificacaoResumoResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            origem: components["schemas"]["OrigemClassificacao"];
+            status: components["schemas"]["StatusClassificacao"];
+            /** Confianca */
+            confianca: number;
+            /** Revisao Prioritaria */
+            revisao_prioritaria: boolean;
+            /** Disciplina Principal */
+            disciplina_principal: string;
+            /** Disciplinas Secundarias */
+            disciplinas_secundarias: string[];
+            /** Topicos */
+            topicos: string[];
+        };
+        /**
+         * CodigoAlertaExtracao
+         * @enum {string}
+         */
+        CodigoAlertaExtracao: "formula_nao_decodificada" | "alternativas_incompletas" | "pdf_via_ocr" | "enunciado_suspeito" | "fonte_symbol_detectada" | "gabarito_ausente_na_prova";
         /** ConflitoProvaResponse */
         ConflitoProvaResponse: {
             /** Detail */
@@ -325,6 +617,15 @@ export interface components {
             curso: string;
             /** Ano */
             ano: number;
+        };
+        /** ContadoresRevisaoResponse */
+        ContadoresRevisaoResponse: {
+            /** Pendentes */
+            pendentes: number;
+            /** Divergencias */
+            divergencias: number;
+            /** Disciplina Arquivada */
+            disciplina_arquivada: number;
         };
         /** ContagemAlertasResponse */
         ContagemAlertasResponse: {
@@ -347,6 +648,60 @@ export interface components {
             gabarito_anuladas: number;
             /** Gabarito Pendentes */
             gabarito_pendentes: number;
+        };
+        /** CorrigirClassificacaoRequest */
+        CorrigirClassificacaoRequest: {
+            /** Disciplina Principal */
+            disciplina_principal: string;
+            /** Disciplinas Secundarias */
+            disciplinas_secundarias?: string[];
+            /** Topicos */
+            topicos?: string[];
+            /**
+             * Justificativa
+             * @default
+             */
+            justificativa: string;
+        };
+        /** DetalheQuestaoResponse */
+        DetalheQuestaoResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            prova: components["schemas"]["ProvaResumoResponse"];
+            /** Numero */
+            numero: number;
+            /** Componente */
+            componente: string;
+            /** Tipo */
+            tipo: string;
+            /** Paginas */
+            paginas: number[];
+            /** Enunciado */
+            enunciado: string;
+            /** Editada Manualmente */
+            editada_manualmente: boolean;
+            /** Versao */
+            versao: number;
+            /** Alternativas */
+            alternativas: components["schemas"]["AlternativaResponse"][];
+            /** Ativos Visuais */
+            ativos_visuais: components["schemas"]["AtivoVisualResponse"][];
+            gabarito: components["schemas"]["GabaritoResponse"];
+            /** Alertas Extracao */
+            alertas_extracao: components["schemas"]["AlertaExtracaoResponse"][];
+            /** Taxonomia Id */
+            taxonomia_id?: string | null;
+            classificacao_vigente?: components["schemas"]["ClassificacaoResponse"] | null;
+            /** Disciplinas Arquivadas Em Uso */
+            disciplinas_arquivadas_em_uso: string[];
+            divergencia_aberta?: components["schemas"]["DivergenciaResponse"] | null;
+            /** Historico */
+            historico: components["schemas"]["ClassificacaoResponse"][];
+            /** Outras Taxonomias */
+            outras_taxonomias: components["schemas"]["ClassificacaoOutraTaxonomiaResponse"][];
         };
         /** DisciplinaAtualizarRequest */
         DisciplinaAtualizarRequest: {
@@ -417,6 +772,62 @@ export interface components {
             ativa: boolean;
             /** Classificacoes Vigentes Impactadas */
             classificacoes_vigentes_impactadas: number;
+        };
+        /** DivergenciaResponse */
+        DivergenciaResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Questao Id
+             * Format: uuid
+             */
+            questao_id: string;
+            /**
+             * Taxonomia Id
+             * Format: uuid
+             */
+            taxonomia_id: string;
+            /**
+             * Execucao Id
+             * Format: uuid
+             */
+            execucao_id: string;
+            /**
+             * Classificacao Vigente Id
+             * Format: uuid
+             */
+            classificacao_vigente_id: string;
+            /** Classificacao Candidata Id */
+            classificacao_candidata_id?: string | null;
+            /** Disciplina Principal Candidata */
+            disciplina_principal_candidata: string;
+            /** Disciplinas Secundarias Candidatas */
+            disciplinas_secundarias_candidatas: string[];
+            /** Topicos Candidatos */
+            topicos_candidatos: string[];
+            /** Justificativa Candidata */
+            justificativa_candidata: string;
+            /** Confianca Candidata */
+            confianca_candidata: number;
+            status: components["schemas"]["StatusDivergencia"];
+            resolucao?: components["schemas"]["ResolucaoDivergencia"] | null;
+            /** Criada Em */
+            criada_em?: string | null;
+            /** Resolvida Em */
+            resolvida_em?: string | null;
+        };
+        /** EditarQuestaoRequest */
+        EditarQuestaoRequest: {
+            /** Enunciado */
+            enunciado?: string | null;
+            /** Alternativas */
+            alternativas?: components["schemas"]["AlternativaEdicaoRequest"][] | null;
+            gabarito?: components["schemas"]["GabaritoEdicaoRequest"] | null;
+            /** Versao */
+            versao?: number | null;
         };
         /** ErroDetalheResponse */
         ErroDetalheResponse: {
@@ -589,6 +1000,16 @@ export interface components {
             concluida_em?: string | null;
             snapshot_resumo: components["schemas"]["SnapshotExecucaoResumoResponse"];
         };
+        /** GabaritoEdicaoRequest */
+        GabaritoEdicaoRequest: {
+            situacao_gabarito: components["schemas"]["SituacaoGabarito"];
+            alternativa_correta?: components["schemas"]["LetraAlternativa"] | null;
+        };
+        /** GabaritoResponse */
+        GabaritoResponse: {
+            situacao_gabarito: components["schemas"]["SituacaoGabarito"];
+            alternativa_correta?: components["schemas"]["LetraAlternativa"] | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -630,6 +1051,36 @@ export interface components {
             criada_em?: string | null;
             metadados: components["schemas"]["MetadadosIngestaoResponse"];
         };
+        /** ItemQuestaoResponse */
+        ItemQuestaoResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            prova: components["schemas"]["ProvaResumoResponse"];
+            /** Numero */
+            numero: number;
+            /** Trecho */
+            trecho: string;
+            situacao_gabarito: components["schemas"]["SituacaoGabarito"];
+            /** Editada Manualmente */
+            editada_manualmente: boolean;
+            /** Alertas Abertos */
+            alertas_abertos: components["schemas"]["CodigoAlertaExtracao"][];
+            /** Revisao Prioritaria */
+            revisao_prioritaria: boolean;
+            /** Tem Divergencia Aberta */
+            tem_divergencia_aberta: boolean;
+            /** Usa Disciplina Arquivada */
+            usa_disciplina_arquivada: boolean;
+            classificacao?: components["schemas"]["ClassificacaoResumoResponse"] | null;
+        };
+        /**
+         * LetraAlternativa
+         * @enum {string}
+         */
+        LetraAlternativa: "A" | "B" | "C" | "D" | "E";
         /** ListaExecucoesClassificacaoResponse */
         ListaExecucoesClassificacaoResponse: {
             /** Itens */
@@ -650,6 +1101,20 @@ export interface components {
             itens: components["schemas"]["ProvaDetalheResponse"][];
             /** Total */
             total: number;
+        };
+        /** ListaQuestoesResponse */
+        ListaQuestoesResponse: {
+            /** Itens */
+            itens: components["schemas"]["ItemQuestaoResponse"][];
+            /** Total */
+            total: number;
+            /** Pagina */
+            pagina: number;
+            /** Tamanho Pagina */
+            tamanho_pagina: number;
+            /** Taxonomia Id */
+            taxonomia_id?: string | null;
+            contadores?: components["schemas"]["ContadoresRevisaoResponse"] | null;
         };
         /** ListaTaxonomiasResponse */
         ListaTaxonomiasResponse: {
@@ -675,6 +1140,21 @@ export interface components {
             /** Gabarito Enviado */
             gabarito_enviado: boolean;
         };
+        /**
+         * OrdenacaoConsulta
+         * @enum {string}
+         */
+        OrdenacaoConsulta: "consulta" | "fila_revisao";
+        /**
+         * OrigemAtivoVisual
+         * @enum {string}
+         */
+        OrigemAtivoVisual: "picture_docling" | "formula_recorte" | "upload_manual";
+        /**
+         * OrigemClassificacao
+         * @enum {string}
+         */
+        OrigemClassificacao: "automatica" | "humana";
         /** PerfilClassificacaoCriarRequest */
         PerfilClassificacaoCriarRequest: {
             /** Versao */
@@ -772,6 +1252,20 @@ export interface components {
             /** Possui Gabarito */
             possui_gabarito: boolean;
         };
+        /** ProvaResumoResponse */
+        ProvaResumoResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Exame */
+            exame: string;
+            /** Curso */
+            curso: string;
+            /** Ano */
+            ano: number;
+        };
         /** ReprocessarProvaAceitaResponse */
         ReprocessarProvaAceitaResponse: {
             /**
@@ -800,6 +1294,21 @@ export interface components {
              */
             sobrescrever_editadas: boolean;
         };
+        /**
+         * ResolucaoDivergencia
+         * @enum {string}
+         */
+        ResolucaoDivergencia: "aceitar_candidata" | "manter_humana" | "editar_manualmente";
+        /** ResolverDivergenciaRequest */
+        ResolverDivergenciaRequest: {
+            resolucao: components["schemas"]["ResolucaoDivergencia"];
+            classificacao?: components["schemas"]["CorrigirClassificacaoRequest"] | null;
+        };
+        /** ResolverDivergenciaResponse */
+        ResolverDivergenciaResponse: {
+            divergencia: components["schemas"]["DivergenciaResponse"];
+            classificacao_vigente?: components["schemas"]["ClassificacaoResponse"] | null;
+        };
         /** ResumoAtualizacaoGabaritoResponse */
         ResumoAtualizacaoGabaritoResponse: {
             /** Mantidas */
@@ -813,6 +1322,16 @@ export interface components {
             /** Questoes Sem Gabarito */
             questoes_sem_gabarito: number[];
         };
+        /**
+         * SeveridadeAlerta
+         * @enum {string}
+         */
+        SeveridadeAlerta: "critico" | "informativo";
+        /**
+         * SituacaoGabarito
+         * @enum {string}
+         */
+        SituacaoGabarito: "valida" | "anulada" | "pendente";
         /** SnapshotExecucaoResumoResponse */
         SnapshotExecucaoResumoResponse: {
             taxonomia: components["schemas"]["SnapshotTaxonomiaResumoResponse"];
@@ -850,8 +1369,29 @@ export interface components {
             /** Disciplinas Codigos */
             disciplinas_codigos?: string[];
         };
+        /**
+         * StatusAlerta
+         * @enum {string}
+         */
+        StatusAlerta: "aberto" | "resolvido";
+        /**
+         * StatusClassificacao
+         * @enum {string}
+         */
+        StatusClassificacao: "pendente_revisao" | "aprovada";
+        /**
+         * StatusDivergencia
+         * @enum {string}
+         */
+        StatusDivergencia: "aberta" | "resolvida";
         /** @enum {string} */
         StatusExecucaoLiteral: "pendente" | "processando" | "concluida" | "concluida_com_erros" | "interrompida" | "erro";
+        /**
+         * StatusRevisao
+         * @description Situação de revisão de uma Questão sob uma Taxonomia.
+         * @enum {string}
+         */
+        StatusRevisao: "sem_classificacao" | "pendente_revisao" | "aprovada" | "pendente";
         /** TaxonomiaAtualizarRequest */
         TaxonomiaAtualizarRequest: {
             /** Nome */
@@ -1228,6 +1768,407 @@ export interface operations {
             };
         };
     };
+    listar_questoes_api_v1_questoes_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                prova_id?: string | null;
+                ano?: number | null;
+                taxonomia_id?: string | null;
+                disciplina_id?: string | null;
+                incluir_secundarias?: boolean;
+                topico?: string | null;
+                status_revisao?: components["schemas"]["StatusRevisao"] | null;
+                revisao_prioritaria?: boolean | null;
+                com_divergencia?: boolean | null;
+                usa_disciplina_arquivada?: boolean | null;
+                situacao_gabarito?: components["schemas"]["SituacaoGabarito"] | null;
+                com_alerta_extracao?: boolean | null;
+                ordenacao?: components["schemas"]["OrdenacaoConsulta"];
+                pagina?: number;
+                tamanho_pagina?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListaQuestoesResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    obter_questao_api_v1_questoes__questao_id__get: {
+        parameters: {
+            query?: {
+                taxonomia_id?: string | null;
+            };
+            header?: never;
+            path: {
+                questao_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalheQuestaoResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    editar_questao_api_v1_questoes__questao_id__patch: {
+        parameters: {
+            query?: {
+                taxonomia_id?: string | null;
+            };
+            header?: never;
+            path: {
+                questao_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditarQuestaoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalheQuestaoResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    aprovar_classificacao_api_v1_questoes__questao_id__classificacoes__taxonomia_id__aprovar_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                questao_id: string;
+                taxonomia_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassificacaoResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    corrigir_classificacao_api_v1_questoes__questao_id__classificacoes__taxonomia_id__corrigir_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                questao_id: string;
+                taxonomia_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorrigirClassificacaoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassificacaoResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    resolver_divergencia_api_v1_questoes__questao_id__divergencias__divergencia_id__resolver_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                questao_id: string;
+                divergencia_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolverDivergenciaRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResolverDivergenciaResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    atualizar_alerta_api_v1_questoes__questao_id__alertas__alerta_id__patch: {
+        parameters: {
+            query?: {
+                taxonomia_id?: string | null;
+            };
+            header?: never;
+            path: {
+                questao_id: string;
+                alerta_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AtualizarAlertaRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalheQuestaoResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
+    adicionar_ativo_visual_api_v1_questoes__questao_id__ativos_visuais_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                questao_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_adicionar_ativo_visual_api_v1_questoes__questao_id__ativos_visuais_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtivoVisualResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+        };
+    };
     obter_arquivo_ativo_visual_api_v1_ativos_visuais__ativo_id__arquivo_get: {
         parameters: {
             query?: never;
@@ -1274,6 +2215,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remover_ativo_visual_api_v1_ativos_visuais__ativo_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ativo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    atualizar_ativo_visual_api_v1_ativos_visuais__ativo_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ativo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_atualizar_ativo_visual_api_v1_ativos_visuais__ativo_id__patch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AtivoVisualResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErroDetalheResponse"];
                 };
             };
         };

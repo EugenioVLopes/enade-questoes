@@ -315,9 +315,11 @@ class Questao:
     alertas_extracao: list[AlertaExtracao] = field(default_factory=list)
     editada_manualmente: bool = False
     id: UUID = field(default_factory=uuid4)
+    versao: int = 1
 
     def __post_init__(self) -> None:
         _validar_inteiro_positivo(self.numero, "numero")
+        _validar_inteiro_positivo(self.versao, "versao")
         try:
             self.componente = ComponenteProva(self.componente)
             self.tipo = TipoQuestao(self.tipo)
@@ -362,9 +364,13 @@ class Questao:
         alternativas: list[Alternativa] | None = None,
         gabarito: Gabarito | None = None,
     ) -> None:
+        if enunciado is not None and not enunciado.strip():
+            raise ErroValidacaoDominio("O enunciado não pode ser vazio.")
         if alternativas is not None:
             copia_alternativas = _copiar_lista_validada(alternativas, "alternativas")
             self._validar_alternativas(copia_alternativas)
+            if self.tipo == TipoQuestao.OBJETIVA and not copia_alternativas:
+                raise ErroValidacaoDominio("Questão objetiva exige ao menos uma alternativa.")
             self.alternativas = copia_alternativas
         if enunciado is not None:
             self.enunciado = enunciado

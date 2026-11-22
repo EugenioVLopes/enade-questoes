@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import datetime
-from typing import Protocol, runtime_checkable
+from typing import Protocol, TypeVar, runtime_checkable
 from uuid import UUID
 
 from domain.avaliacao import ConjuntoOuro
@@ -17,6 +17,8 @@ from domain.classificacao import (
 from domain.enums import ResolucaoDivergencia, StatusClassificacao, StatusDivergencia
 from domain.prova import AtivoVisual, Ingestao, Prova, Questao
 from domain.taxonomia import Disciplina, Taxonomia
+
+_R = TypeVar("_R")
 
 
 @runtime_checkable
@@ -48,6 +50,18 @@ class RepositorioQuestoes(Protocol):
     def salvar(self, questao: Questao) -> Questao: ...
 
     def salvar_lote(self, questoes: Sequence[Questao]) -> list[Questao]: ...
+
+    def salvar_lote_do_sistema(self, questoes: Sequence[Questao], *, sobrescrever_alteradas: bool) -> list[Questao]:
+        """Grava lote de ingestão/reprocessamento sem levantar conflito de versão.
+
+        Questão existente cuja versão persistida difere da lida (revisor salvou no intervalo) é preservada
+        quando `sobrescrever_alteradas` é falso e sobrescrita quando é verdadeiro.
+        """
+        ...
+
+    def atualizar_por_prova(self, prova_id: UUID, aplicar: Callable[[list[Questao]], _R]) -> _R:
+        """Lê as Questões da prova com as linhas travadas, aplica a mutação e grava tudo numa só transação."""
+        ...
 
     def buscar_por_id(self, questao_id: UUID) -> Questao | None: ...
 
@@ -142,6 +156,14 @@ class RepositorioExecucoesClassificacao(Protocol):
 @runtime_checkable
 class RepositorioClassificacoes(Protocol):
     def salvar(self, classificacao: Classificacao) -> Classificacao: ...
+
+    def atualizar_revisao_prioritaria(self, classificacao_id: UUID, revisao_prioritaria: bool) -> bool:
+        """Atualiza só a coluna `revisao_prioritaria` se a Classificação ainda é vigente e pendente."""
+        ...
+
+    def aprovar_se_pendente_vigente(self, classificacao_id: UUID, agora: datetime) -> Classificacao | None:
+        """Aprova in-place (só `status` e `revisada_em`) se ainda é vigente e pendente; `None` se não for mais."""
+        ...
 
     def registrar_substituicao(
         self,

@@ -340,17 +340,31 @@ class AtualizarGabaritoUseCase:
             resultado_gab = self._extrator_gabarito.extrair(caminho_tmp)
 
         chave_gabarito = f"provas/{prova.id}/gabarito.pdf"
-        self._armazenamento.salvar(chave_gabarito, conteudo_gabarito_pdf)
-
         agora = _agora_utc()
+        gabaritos_por_numero = resultado_gab.mapa_objetivas()
+
+        # O PDF é gravado de forma compensável: se a gravação das Questões falhar, o arquivo anterior é restaurado
+        # e nem `caminho_gabarito` nem `gabarito_enviado` chegam a mudar.
+        conteudo_anterior = (
+            self._armazenamento.ler(chave_gabarito) if self._armazenamento.existe(chave_gabarito) else None
+        )
+        self._armazenamento.salvar(chave_gabarito, conteudo_gabarito_pdf)
+        try:
+            # Leitura, aplicação e gravação numa só transação, com as linhas travadas: edição concorrente do revisor
+            # é preservada (o gabarito é aplicado sobre ela) e nunca gera conflito de versão.
+            resumo = self._repo_questoes.atualizar_por_prova(
+                prova.id, lambda questoes: aplicar_gabarito_na_prova(questoes, gabaritos_por_numero, agora)
+            )
+        except Exception:
+            if conteudo_anterior is not None:
+                self._armazenamento.salvar(chave_gabarito, conteudo_anterior)
+            else:
+                self._armazenamento.remover(chave_gabarito)
+            raise
+
         prova.caminho_gabarito = chave_gabarito
         prova.atualizada_em = agora
         self._repo_provas.salvar(prova)
-
-        questoes = self._repo_questoes.listar_por_prova(prova.id)
-        resumo = aplicar_gabarito_na_prova(questoes, resultado_gab.mapa_objetivas(), agora)
-        if questoes:
-            self._repo_questoes.salvar_lote(questoes)
 
         if ultima_ingestao is not None and not ultima_ingestao.metadados.gabarito_enviado:
             ultima_ingestao.metadados = replace(ultima_ingestao.metadados, gabarito_enviado=True)

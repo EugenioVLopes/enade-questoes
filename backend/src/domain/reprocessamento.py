@@ -166,6 +166,7 @@ def reconciliar_reprocessamento_prova(
             gabarito=gabarito_final,
             alertas_extracao=alertas_reconciliados,
             editada_manualmente=False,
+            versao=q_atual.versao,
         )
         finais_por_numero[numero] = q_reconciliada
         atualizadas.append(numero)

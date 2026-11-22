@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, TypeVar
 from uuid import UUID
 
-from sqlalchemy import and_, case, delete, exists, func, or_, select, text, true, union, update
+from sqlalchemy import Text, case, cast, delete, exists, func, or_, select, text, true, union, update
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
+from application.exceptions import ConflitoRecursoError
 from domain.classificacao import (
     Classificacao,
     DivergenciaReclassificacao,
@@ -62,6 +63,7 @@ from infrastructure.persistence.models import (
     QuestaoModel,
     TaxonomiaModel,
 )
+from infrastructure.persistence.predicados import classificacao_usa_disciplina_arquivada
 
 _CARACTERES_TECNICOS_RE = re.compile(r"[()\[\]{}<>=+/*_~^#\\]")
 
@@ -82,6 +84,72 @@ def _descongelar_json(valor: Any) -> Any:
 
 def _escapar_like(termo: str) -> str:
     return termo.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def condicao_busca_textual(termo_limpo: str, *, taxonomia_id: UUID | None = None) -> tuple[Any, Any]:
+    """Monta a condição e a relevância da busca textual sobre enunciado, alternativas e Tópicos.
+
+    Combina ``TSVECTOR`` (configuração ``pt_unaccent``: português + unaccent) com ``ILIKE``
+    acelerado pelos índices ``pg_trgm``. Termos com caracteres técnicos usam apenas trigramas.
+    """
+    padrao_ilike = f"%{_escapar_like(termo_limpo)}%"
+    enunciado_ilike = QuestaoModel.enunciado.ilike(padrao_ilike, escape="\\")
+    alt_ilike = exists(
+        select(AlternativaModel.id).where(
+            AlternativaModel.questao_id == QuestaoModel.id,
+            AlternativaModel.texto.ilike(padrao_ilike, escape="\\"),
+        )
+    )
+
+    filtros_classificacao = [
+        ClassificacaoModel.questao_id == QuestaoModel.id,
+        ClassificacaoModel.vigente.is_(True),
+    ]
+    if taxonomia_id is not None:
+        filtros_classificacao.append(ClassificacaoModel.taxonomia_id == taxonomia_id)
+
+    topico_elem = func.jsonb_array_elements_text(ClassificacaoModel.topicos).table_valued("value").alias("topico")
+    criterios_topico = [*filtros_classificacao, topico_elem.c.value.ilike(padrao_ilike, escape="\\")]
+    if '"' not in termo_limpo and "\\" not in termo_limpo:
+        # Pré-filtro com a mesma expressão do índice GIN `ix_classificacoes_topicos_trgm` (migration 0003).
+        # Só é seguro sem aspas/barra invertida (o JSON as escapa); a checagem por elemento abaixo continua
+        # sendo a regra de correção e impede casar delimitadores JSONB como '[' e ']'.
+        criterios_topico.append(cast(ClassificacaoModel.topicos, Text).ilike(padrao_ilike, escape="\\"))
+    topicos_ilike = exists(
+        select(ClassificacaoModel.id).select_from(ClassificacaoModel).join(topico_elem, true()).where(*criterios_topico)
+    )
+
+    if _CARACTERES_TECNICOS_RE.search(termo_limpo):
+        condicao = or_(enunciado_ilike, alt_ilike, topicos_ilike)
+        relevancia = case(
+            (enunciado_ilike, 2.0),
+            (alt_ilike, 1.5),
+            (topicos_ilike, 1.0),
+            else_=0.0,
+        )
+        return condicao, relevancia
+
+    ts_query = func.websearch_to_tsquery("pt_unaccent", termo_limpo)
+    topicos_tsv_expr = func.jsonb_to_tsvector(
+        text("'pt_unaccent'::regconfig"),
+        ClassificacaoModel.topicos,
+        text("'[\"string\"]'::jsonb"),
+    )
+    topicos_tsv = exists(
+        select(ClassificacaoModel.id).where(
+            *filtros_classificacao,
+            topicos_tsv_expr.op("@@")(ts_query),
+        )
+    )
+    questao_tsv = QuestaoModel.busca_tsv.op("@@")(ts_query)
+    condicao = or_(questao_tsv, topicos_tsv, enunciado_ilike, alt_ilike, topicos_ilike)
+    relevancia = func.coalesce(func.ts_rank_cd(QuestaoModel.busca_tsv, ts_query), 0.0) + case(
+        (enunciado_ilike, 1.0),
+        (alt_ilike, 0.5),
+        (topicos_ilike, 0.5),
+        else_=0.0,
+    )
+    return condicao, relevancia
 
 
 # ---------------------------------------------------------------------------
@@ -224,6 +292,7 @@ def _para_dominio_questao(row: QuestaoModel) -> Questao:
         gabarito=gabarito,
         alertas_extracao=alertas,
         editada_manualmente=row.editada_manualmente,
+        versao=row.versao,
     )
 
 
@@ -498,11 +567,17 @@ class RepositorioIngestoesSqlAlchemy:
             return int(result.rowcount or 0)
 
 
+_R = TypeVar("_R")
+
+
 class RepositorioQuestoesSqlAlchemy:
     def __init__(self, session_factory: sessionmaker[Session]) -> None:
         self._session_factory = session_factory
 
-    def _upsert_em_sessao(self, session: Session, questao: Questao) -> QuestaoModel:
+    def _upsert_em_sessao(
+        self, session: Session, questao: Questao, *, divergencia_de_versao: str = "erro"
+    ) -> QuestaoModel:
+        """Grava a Questão; `divergencia_de_versao` (erro, preservar ou sobrescrever) rege a versão divergente."""
         stmt = (
             select(QuestaoModel)
             .where(QuestaoModel.id == questao.id)
@@ -511,6 +586,7 @@ class RepositorioQuestoesSqlAlchemy:
                 selectinload(QuestaoModel.ativos_visuais),
                 selectinload(QuestaoModel.alertas_extracao),
             )
+            .with_for_update(of=QuestaoModel)
         )
         row = session.scalar(stmt)
 
@@ -530,6 +606,7 @@ class RepositorioQuestoesSqlAlchemy:
                 situacao_gabarito=questao.gabarito.situacao_gabarito.value,
                 alternativa_correta=alternativa_correta,
                 editada_manualmente=questao.editada_manualmente,
+                versao=1,
             )
             for alt in questao.alternativas:
                 row.alternativas.append(
@@ -564,6 +641,15 @@ class RepositorioQuestoesSqlAlchemy:
             session.add(row)
             return row
 
+        # Lock otimista: a linha está travada (FOR UPDATE); a versão lida precisa ser a persistida.
+        if row.versao != questao.versao and divergencia_de_versao == "preservar":
+            return row
+        if row.versao != questao.versao and divergencia_de_versao == "erro":
+            raise ConflitoRecursoError(
+                f"Questão '{questao.id}' foi alterada por outra operação "
+                f"(versão lida {questao.versao}, atual {row.versao}); recarregue e tente novamente."
+            )
+        row.versao = row.versao + 1
         row.prova_id = questao.prova_id
         row.numero = questao.numero
         row.componente = questao.componente.value
@@ -703,7 +789,9 @@ class RepositorioQuestoesSqlAlchemy:
             row = self._upsert_em_sessao(session, questao)
             session.flush()
             session.refresh(row)
-            return _para_dominio_questao(row)
+            resultado = _para_dominio_questao(row)
+        questao.versao = resultado.versao
+        return resultado
 
     def salvar_lote(self, questoes: Sequence[Questao]) -> list[Questao]:
         if not questoes:
@@ -713,7 +801,43 @@ class RepositorioQuestoesSqlAlchemy:
             session.flush()
             for row in rows:
                 session.refresh(row)
-            return [_para_dominio_questao(row) for row in rows]
+            resultado = [_para_dominio_questao(row) for row in rows]
+        for questao, salva in zip(questoes, resultado, strict=True):
+            questao.versao = salva.versao
+        return resultado
+
+    def salvar_lote_do_sistema(self, questoes: Sequence[Questao], *, sobrescrever_alteradas: bool) -> list[Questao]:
+        if not questoes:
+            return []
+        modo = "sobrescrever" if sobrescrever_alteradas else "preservar"
+        with self._session_factory.begin() as session:
+            rows = [self._upsert_em_sessao(session, q, divergencia_de_versao=modo) for q in questoes]
+            session.flush()
+            for row in rows:
+                session.refresh(row)
+            resultado = [_para_dominio_questao(row) for row in rows]
+        for questao, salva in zip(questoes, resultado, strict=True):
+            questao.versao = salva.versao
+        return resultado
+
+    def atualizar_por_prova(self, prova_id: UUID, aplicar: Callable[[list[Questao]], _R]) -> _R:
+        with self._session_factory.begin() as session:
+            stmt = (
+                select(QuestaoModel)
+                .where(QuestaoModel.prova_id == prova_id)
+                .order_by(QuestaoModel.numero)
+                .options(
+                    selectinload(QuestaoModel.alternativas),
+                    selectinload(QuestaoModel.ativos_visuais),
+                    selectinload(QuestaoModel.alertas_extracao),
+                )
+                .with_for_update(of=QuestaoModel)
+            )
+            questoes = [_para_dominio_questao(row) for row in session.scalars(stmt).all()]
+            resultado = aplicar(questoes)
+            for questao in questoes:
+                self._upsert_em_sessao(session, questao)
+            return resultado
 
     def buscar_por_id(self, questao_id: UUID) -> Questao | None:
         with self._session_factory() as session:
@@ -796,23 +920,11 @@ class RepositorioQuestoesSqlAlchemy:
 
     def listar_com_disciplina_arquivada(self, taxonomia_id: UUID) -> list[Questao]:
         tem_arquivada = exists(
-            select(ClassificacaoModel.id)
-            .select_from(ClassificacaoModel)
-            .join(
-                DisciplinaModel,
-                and_(
-                    DisciplinaModel.taxonomia_id == ClassificacaoModel.taxonomia_id,
-                    DisciplinaModel.ativa.is_(False),
-                ),
-            )
-            .where(
+            select(ClassificacaoModel.id).where(
                 ClassificacaoModel.questao_id == QuestaoModel.id,
                 ClassificacaoModel.taxonomia_id == taxonomia_id,
                 ClassificacaoModel.vigente.is_(True),
-                or_(
-                    ClassificacaoModel.disciplina_principal == DisciplinaModel.codigo,
-                    ClassificacaoModel.disciplinas_secundarias.op("@>")(func.jsonb_build_array(DisciplinaModel.codigo)),
-                ),
+                classificacao_usa_disciplina_arquivada(ClassificacaoModel, taxonomia_id),
             )
         )
         with self._session_factory() as session:
@@ -840,62 +952,7 @@ class RepositorioQuestoesSqlAlchemy:
         if not termo_limpo:
             return []
 
-        padrao_ilike = f"%{_escapar_like(termo_limpo)}%"
-        enunciado_ilike = QuestaoModel.enunciado.ilike(padrao_ilike, escape="\\")
-        alt_ilike = exists(
-            select(AlternativaModel.id).where(
-                AlternativaModel.questao_id == QuestaoModel.id,
-                AlternativaModel.texto.ilike(padrao_ilike, escape="\\"),
-            )
-        )
-
-        filtros_classificacao = [
-            ClassificacaoModel.questao_id == QuestaoModel.id,
-            ClassificacaoModel.vigente.is_(True),
-        ]
-        if taxonomia_id is not None:
-            filtros_classificacao.append(ClassificacaoModel.taxonomia_id == taxonomia_id)
-
-        topico_elem = func.jsonb_array_elements_text(ClassificacaoModel.topicos).table_valued("value").alias("topico")
-        topicos_ilike = exists(
-            select(ClassificacaoModel.id)
-            .select_from(ClassificacaoModel)
-            .join(topico_elem, true())
-            .where(
-                *filtros_classificacao,
-                topico_elem.c.value.ilike(padrao_ilike, escape="\\"),
-            )
-        )
-
-        if _CARACTERES_TECNICOS_RE.search(termo_limpo):
-            condicao_busca = or_(enunciado_ilike, alt_ilike, topicos_ilike)
-            relevancia = case(
-                (enunciado_ilike, 2.0),
-                (alt_ilike, 1.5),
-                (topicos_ilike, 1.0),
-                else_=0.0,
-            )
-        else:
-            ts_query = func.websearch_to_tsquery("pt_unaccent", termo_limpo)
-            topicos_tsv_expr = func.jsonb_to_tsvector(
-                text("'pt_unaccent'::regconfig"),
-                ClassificacaoModel.topicos,
-                text("'[\"string\"]'::jsonb"),
-            )
-            topicos_tsv = exists(
-                select(ClassificacaoModel.id).where(
-                    *filtros_classificacao,
-                    topicos_tsv_expr.op("@@")(ts_query),
-                )
-            )
-            questao_tsv = QuestaoModel.busca_tsv.op("@@")(ts_query)
-            condicao_busca = or_(questao_tsv, topicos_tsv, enunciado_ilike, alt_ilike, topicos_ilike)
-            relevancia = func.coalesce(func.ts_rank_cd(QuestaoModel.busca_tsv, ts_query), 0.0) + case(
-                (enunciado_ilike, 1.0),
-                (alt_ilike, 0.5),
-                (topicos_ilike, 0.5),
-                else_=0.0,
-            )
+        condicao_busca, relevancia = condicao_busca_textual(termo_limpo, taxonomia_id=taxonomia_id)
 
         with self._session_factory() as session:
             stmt = (
@@ -1436,6 +1493,39 @@ class RepositorioClassificacoesSqlAlchemy:
                 row.revisada_em = classificacao.revisada_em
             session.flush()
             return _para_dominio_classificacao(row)
+
+    def atualizar_revisao_prioritaria(self, classificacao_id: UUID, revisao_prioritaria: bool) -> bool:
+        """Atualiza só `revisao_prioritaria` se a Classificação ainda é vigente e pendente de revisão."""
+        stmt = (
+            update(ClassificacaoModel)
+            .where(
+                ClassificacaoModel.id == classificacao_id,
+                ClassificacaoModel.status == StatusClassificacao.PENDENTE_REVISAO.value,
+                ClassificacaoModel.vigente.is_(True),
+                ClassificacaoModel.revisao_prioritaria.is_distinct_from(revisao_prioritaria),
+            )
+            .values(revisao_prioritaria=revisao_prioritaria)
+        )
+        with self._session_factory.begin() as session:
+            return bool(session.execute(stmt).rowcount)
+
+    def aprovar_se_pendente_vigente(self, classificacao_id: UUID, agora: datetime) -> Classificacao | None:
+        """UPDATE condicional: aprova só se a linha ainda é a vigente pendente; nunca regrava a linha inteira."""
+        stmt = (
+            update(ClassificacaoModel)
+            .where(
+                ClassificacaoModel.id == classificacao_id,
+                ClassificacaoModel.vigente.is_(True),
+                ClassificacaoModel.status == StatusClassificacao.PENDENTE_REVISAO.value,
+            )
+            .values(status=StatusClassificacao.APROVADA.value, revisada_em=agora)
+            .returning(ClassificacaoModel.id)
+        )
+        with self._session_factory.begin() as session:
+            if session.execute(stmt).scalar() is None:
+                return None
+            row = session.get(ClassificacaoModel, classificacao_id, populate_existing=True)
+            return _para_dominio_classificacao(row) if row is not None else None
 
     def registrar_substituicao(
         self,

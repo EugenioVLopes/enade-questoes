@@ -432,13 +432,19 @@ class WorkerLocal:
             else:
                 questoes_finais = questoes_extraidas
 
-            if questoes_finais:
-                self._repo_questoes.salvar_lote(questoes_finais)
+            # Questões que o reprocessamento manteve intactas (mesmo objeto lido) não são regravadas: assim uma edição
+            # do revisor durante a extração nunca é revertida nem gera conflito de versão.
+            lidas_por_id = {q.id: q for q in questoes_atuais}
+            a_gravar = [q for q in questoes_finais if lidas_por_id.get(q.id) is not q]
+            questoes_persistidas = [q for q in questoes_finais if lidas_por_id.get(q.id) is q]
+            questoes_persistidas += self._repo_questoes.salvar_lote_do_sistema(
+                a_gravar, sobrescrever_alteradas=tarefa.sobrescrever_editadas
+            )
             prova.atualizada_em = _agora_utc()
             self._repo_provas.salvar(prova)
 
             chaves_depois = {
-                ativo.chave_arquivo for q in questoes_finais for ativo in q.ativos_visuais if ativo.chave_arquivo
+                ativo.chave_arquivo for q in questoes_persistidas for ativo in q.ativos_visuais if ativo.chave_arquivo
             }
             for chave_orfa in (chaves_antes | set(novas_chaves_ativos)) - chaves_depois:
                 self._remover_arquivo_silencioso(chave_orfa)
