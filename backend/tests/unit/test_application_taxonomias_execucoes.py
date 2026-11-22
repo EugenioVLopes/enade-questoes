@@ -116,6 +116,9 @@ class _MemRepoQuestoes:
             self.itens[q.id] = q
         return list(questoes)
 
+    def salvar_lote_do_sistema(self, questoes: Sequence[Questao], *, sobrescrever_alteradas: bool) -> list[Questao]:
+        return self.salvar_lote(questoes)
+
     def buscar_por_id(self, questao_id: UUID) -> Questao | None:
         return self.itens.get(questao_id)
 

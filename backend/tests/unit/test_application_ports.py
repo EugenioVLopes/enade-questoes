@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -141,6 +141,12 @@ class _FakeRepositorios:
     def salvar_lote(self, questoes: Sequence[Questao]) -> list[Questao]:
         return list(questoes)
 
+    def salvar_lote_do_sistema(self, questoes: Sequence[Questao], *, sobrescrever_alteradas: bool) -> list[Questao]:
+        return list(questoes)
+
+    def atualizar_por_prova(self, prova_id: UUID, aplicar: Callable[[list[Questao]], Any]) -> Any:
+        return aplicar([])
+
     def buscar_por_id(self, obj_id: UUID) -> Any:
         return None
 
@@ -225,6 +231,12 @@ class _FakeRepositorios:
 
     def registrar_substituicao(self, anterior: Classificacao, nova: Classificacao) -> Classificacao:
         return nova
+
+    def atualizar_revisao_prioritaria(self, classificacao_id: UUID, revisao_prioritaria: bool) -> bool:
+        return False
+
+    def aprovar_se_pendente_vigente(self, classificacao_id: UUID, agora: datetime) -> Classificacao | None:
+        return None
 
     def buscar_vigente(self, questao_id: UUID, taxonomia_id: UUID) -> Classificacao | None:
         return None
