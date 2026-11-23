@@ -5,6 +5,7 @@ import { PlaceholderSectionPage } from "@/components/layout/PlaceholderSectionPa
 import { RootIndexRedirect } from "@/components/layout/RootIndexRedirect";
 import { TaxonomiaProvider } from "@/components/layout/TaxonomiaContext";
 import { ProvasPage } from "@/features/provas/ProvasPage";
+import { TaxonomiasPage } from "@/features/taxonomias/TaxonomiasPage";
 
 export const ROUTER_FUTURE_FLAGS: {
   readonly v7_relativeSplatPath: true;
@@ -48,7 +49,7 @@ export function createAppRoutes(): RouteObject[] {
         },
         {
           path: "taxonomias",
-          element: <PlaceholderSectionPage section="taxonomias" />,
+          element: <TaxonomiasPage />,
         },
         {
           path: "*",

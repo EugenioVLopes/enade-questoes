@@ -50,13 +50,14 @@ export function useHealthQuery(options?: { activeHint?: boolean }) {
 
 export function useExecucoesClassificacaoQuery(
   taxonomiaId?: string | null,
-  options?: { activeHint?: boolean },
+  options?: { activeHint?: boolean; enabled?: boolean },
 ) {
   const activeHint = options?.activeHint ?? false;
 
   return useQuery({
     queryKey: queryKeys.execucoesClassificacao.list(taxonomiaId),
     queryFn: () => listarExecucoesClassificacao(taxonomiaId),
+    enabled: options?.enabled ?? true,
     refetchInterval: (currentQuery) => {
       const hasActive =
         currentQuery.state.data?.itens.some((item) => isExecucaoAtiva(item.status)) ?? false;
