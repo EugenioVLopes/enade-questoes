@@ -156,14 +156,7 @@ def test_corrigir_cria_humana_e_preserva_a_predicao_da_ia(
         assert original.revisada_em is None
         assert sum(1 for linha in linhas if linha.vigente) == 1
 
-        # classificação sem vigente -> 404; taxonomia inexistente -> 404
-        outra = criar_questao(repos, prova, 11, "Questão sem classificação registrada para correção.")
-        assert (
-            client.post(
-                f"/api/v1/questoes/{outra.id}/classificacoes/{tax.id}/corrigir", json={"disciplina_principal": "redes"}
-            ).status_code
-            == 404
-        )
+        # taxonomia inexistente -> 404 (sem vigente passou a criar a humana inicial: ver teste dedicado)
         assert (
             client.post(
                 f"/api/v1/questoes/{questao.id}/classificacoes/{uuid4()}/corrigir",
@@ -171,6 +164,96 @@ def test_corrigir_cria_humana_e_preserva_a_predicao_da_ia(
             ).status_code
             == 404
         )
+        assert (
+            client.post(
+                f"/api/v1/questoes/{uuid4()}/classificacoes/{tax.id}/corrigir",
+                json={"disciplina_principal": "redes"},
+            ).status_code
+            == 404
+        )
+
+
+def test_corrigir_sem_vigente_cria_humana_inicial_sem_substituicao(
+    db_teste_url: str, session_factory_teste: sessionmaker[Session], tmp_path: Path
+) -> None:
+    repos, tax, _, prova = _preparar(session_factory_teste)
+    questao = criar_questao(repos, prova, 12, "Questão sem classificação, classificada manualmente.")
+    url = f"/api/v1/questoes/{questao.id}/classificacoes/{tax.id}/corrigir"
+
+    with TestClient(criar_app(db_teste_url, tmp_path)) as client:
+        for corpo in (
+            {"disciplina_principal": "legada"},  # arquivada
+            {"disciplina_principal": "inexistente"},
+            {"disciplina_principal": "redes", "disciplinas_secundarias": ["redes"]},
+        ):
+            assert client.post(url, json=corpo).status_code == 422, corpo
+        assert _linhas(repos, questao.id) == []
+
+        resp = client.post(
+            url,
+            json={
+                "disciplina_principal": "redes",
+                "disciplinas_secundarias": ["algoritmos"],
+                "topicos": ["Roteamento OSPF"],
+                "justificativa": "Classificação manual.",
+            },
+        )
+        assert resp.status_code == 201, resp.text
+        corpo = resp.json()
+        assert corpo["origem"] == "humana"
+        assert corpo["status"] == "aprovada"
+        assert corpo["vigente"] is True
+        assert corpo["substitui_classificacao_id"] is None
+        assert corpo["execucao_id"] is None
+        assert corpo["disciplina_principal"] == "redes"
+        assert corpo["disciplinas_secundarias"] == ["algoritmos"]
+        (linha,) = _linhas(repos, questao.id)
+        assert linha.vigente is True
+
+        # agora há vigente: a próxima correção substitui (não cria segunda vigente)
+        resp2 = client.post(url, json={"disciplina_principal": "algoritmos"})
+        assert resp2.status_code == 201, resp2.text
+        assert resp2.json()["substitui_classificacao_id"] == corpo["id"]
+        linhas = _linhas(repos, questao.id)
+        assert len(linhas) == 2
+        assert sum(1 for item in linhas if item.vigente) == 1
+
+
+def test_corrigir_sem_vigente_com_divergencia_aberta_retorna_409(
+    db_teste_url: str, session_factory_teste: sessionmaker[Session], tmp_path: Path
+) -> None:
+    repos, tax, execucao, prova = _preparar(session_factory_teste)
+    questao = criar_questao(repos, prova, 13, "Questão com divergência aberta e sem correção prévia.")
+    vigente = classificar(
+        repos, questao, tax, "redes", status=StatusClassificacao.APROVADA, origem=OrigemClassificacao.HUMANA
+    )
+    abrir_divergencia(repos, questao, tax, execucao, vigente)
+    with TestClient(criar_app(db_teste_url, tmp_path)) as client:
+        resp = client.post(
+            f"/api/v1/questoes/{questao.id}/classificacoes/{tax.id}/corrigir",
+            json={"disciplina_principal": "algoritmos"},
+        )
+        assert resp.status_code == 409
+
+
+def test_corrigir_sem_vigente_em_corrida_com_outra_vigente_retorna_409_e_nao_500(
+    db_teste_url: str,
+    session_factory_teste: sessionmaker[Session],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repos, tax, _, prova = _preparar(session_factory_teste)
+    questao = criar_questao(repos, prova, 14, "Questão cuja vigente surge durante a correção.")
+    classificar(repos, questao, tax, "redes", status=StatusClassificacao.APROVADA, origem=OrigemClassificacao.HUMANA)
+    # Simula a corrida: a leitura do caso de uso não enxerga a vigente que já existe no banco.
+    monkeypatch.setattr(type(repos.classificacoes), "buscar_vigente", lambda self, questao_id, taxonomia_id: None)
+    with TestClient(criar_app(db_teste_url, tmp_path), raise_server_exceptions=False) as client:
+        resp = client.post(
+            f"/api/v1/questoes/{questao.id}/classificacoes/{tax.id}/corrigir",
+            json={"disciplina_principal": "algoritmos"},
+        )
+        assert resp.status_code == 409, resp.text
+    assert sum(1 for item in _linhas(repos, questao.id) if item.vigente) == 1
 
 
 def test_corrigir_com_divergencia_aberta_exige_endpoint_resolver(

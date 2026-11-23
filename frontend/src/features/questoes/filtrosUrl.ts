@@ -1,6 +1,10 @@
 import type { ListarQuestoesParams } from "@/api/questoes";
 import type { components } from "@/api/schema";
-import { TAXONOMIA_SEARCH_PARAM } from "@/components/layout/useTaxonomia";
+import {
+  REVISAO_MODO_PARAM,
+  REVISAO_MODO_RECORTE,
+  TAXONOMIA_SEARCH_PARAM,
+} from "@/components/layout/useTaxonomia";
 
 type StatusRevisaoApi = components["schemas"]["StatusRevisao"];
 type SituacaoGabaritoApi = components["schemas"]["SituacaoGabarito"];
@@ -231,6 +235,8 @@ export function buildRevisaoRecorteHrefDeFiltros(
   if (taxonomiaId) {
     params.set(TAXONOMIA_SEARCH_PARAM, taxonomiaId);
   }
+  // Marcador explícito: distingue o recorte da Revisão do modo abas (`aba=...`), mesmo sem nenhum filtro.
+  params.set(REVISAO_MODO_PARAM, REVISAO_MODO_RECORTE);
   const valores: [string, string | undefined][] = [
     ["q", filtros.q],
     ["disciplina_id", filtros.disciplina_id],
@@ -250,8 +256,7 @@ export function buildRevisaoRecorteHrefDeFiltros(
   if (questaoId) {
     params.set("questao", questaoId);
   }
-  const serialized = params.toString();
-  return serialized ? `/revisao?${serialized}` : "/revisao";
+  return `/revisao?${params.toString()}`;
 }
 
 /** Href de `/revisao` com o recorte da URL atual; `taxonomiaId` tem precedência sobre o param da URL. */

@@ -113,11 +113,17 @@ describe("buildRevisaoRecorteHref", () => {
   it("preserva o recorte sem pagina e acrescenta questao", () => {
     const search = sp(`taxonomia=${TAX}&pagina=3&q=ospf&disciplina_id=${DISC}&incluir_secundarias=false&com_divergencia=true`);
     expect(buildRevisaoRecorteHref(search)).toBe(
-      `/revisao?taxonomia=${TAX}&q=ospf&disciplina_id=${DISC}&incluir_secundarias=false&com_divergencia=true`,
+      `/revisao?taxonomia=${TAX}&modo=recorte&q=ospf&disciplina_id=${DISC}&incluir_secundarias=false&com_divergencia=true`,
     );
     expect(buildRevisaoRecorteHref(search, "abc")).toBe(
-      `/revisao?taxonomia=${TAX}&q=ospf&disciplina_id=${DISC}&incluir_secundarias=false&com_divergencia=true&questao=abc`,
+      `/revisao?taxonomia=${TAX}&modo=recorte&q=ospf&disciplina_id=${DISC}&incluir_secundarias=false&com_divergencia=true&questao=abc`,
     );
+  });
+});
+
+describe("modo=recorte", () => {
+  it("o marcador vem sempre, mesmo sem Taxonomia nem filtros", () => {
+    expect(buildRevisaoRecorteHref(sp(""))).toBe("/revisao?modo=recorte");
   });
 });
 
@@ -138,7 +144,7 @@ describe("achados do gate r1", () => {
     const search = sp(`taxonomia=${TAX}&incluir_secundarias=false`);
     expect(parseFiltros(search).somentePrincipal).toBe(false);
     expect(filtrosParaApi(parseFiltros(search), TAX).incluir_secundarias).toBe(true);
-    expect(buildRevisaoRecorteHref(search)).toBe(`/revisao?taxonomia=${TAX}`);
+    expect(buildRevisaoRecorteHref(search)).toBe(`/revisao?taxonomia=${TAX}&modo=recorte`);
   });
 
   it("F3: remover a Disciplina ou trocar a Taxonomia limpa incluir_secundarias", () => {

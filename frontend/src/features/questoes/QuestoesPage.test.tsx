@@ -305,14 +305,14 @@ describe("QuestoesPage", () => {
       total: 45,
     });
     const revisar = await screen.findByRole("link", { name: "Revisar este recorte (45)" });
-    expect(revisar).toHaveAttribute("href", `/revisao?taxonomia=${TAX_ID}&q=ospf&disciplina_id=${DISC_ID}&incluir_secundarias=false`);
+    expect(revisar).toHaveAttribute("href", `/revisao?taxonomia=${TAX_ID}&modo=recorte&q=ospf&disciplina_id=${DISC_ID}&incluir_secundarias=false`);
     expect(screen.getByRole("link", { name: /Questão Nº 7/ })).toHaveAttribute(
       "href",
-      `/revisao?taxonomia=${TAX_ID}&q=ospf&disciplina_id=${DISC_ID}&incluir_secundarias=false&questao=q-1`,
+      `/revisao?taxonomia=${TAX_ID}&modo=recorte&q=ospf&disciplina_id=${DISC_ID}&incluir_secundarias=false&questao=q-1`,
     );
     await user.click(revisar);
     expect(router.state.location.pathname).toBe("/revisao");
-    expect(router.state.location.search).toBe(`?taxonomia=${TAX_ID}&q=ospf&disciplina_id=${DISC_ID}&incluir_secundarias=false`);
+    expect(router.state.location.search).toBe(`?taxonomia=${TAX_ID}&modo=recorte&q=ospf&disciplina_id=${DISC_ID}&incluir_secundarias=false`);
   });
 
   it("paginação grava pagina na URL e refaz a consulta", async () => {

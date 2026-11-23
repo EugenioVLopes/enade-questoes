@@ -18,6 +18,9 @@ export const queryKeys = {
   questoes: {
     all: ["questoes"] as const,
     list: (params: ListarQuestoesParams) => ["questoes", "list", params] as const,
+    fila: (params: ListarQuestoesParams) => ["questoes", "fila", params] as const,
+    detalhe: (questaoId: string, taxonomiaId: string) =>
+      ["questoes", "detalhe", questaoId, taxonomiaId] as const,
     contadores: (taxonomiaId?: string | null) =>
       ["questoes", "contadores", taxonomiaId ?? null] as const,
   },

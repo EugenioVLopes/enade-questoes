@@ -56,7 +56,7 @@ def _montar_classificacao_humana(
     taxonomia: Taxonomia,
     questao_id: UUID,
     correcao: CorrecaoClassificacao,
-    substitui_classificacao_id: UUID,
+    substitui_classificacao_id: UUID | None,
     agora: datetime,
 ) -> Classificacao:
     _validar_codigos_ativos(taxonomia, (correcao.disciplina_principal, *correcao.disciplinas_secundarias))
@@ -134,7 +134,7 @@ class CorrigirClassificacaoUseCase:
     def execute(self, questao_id: UUID, taxonomia_id: UUID, correcao: CorrecaoClassificacao) -> Classificacao:
         _garantir_questao(self._repo_questoes, questao_id)
         taxonomia = buscar_taxonomia_ou_404(self._repo_taxonomias, taxonomia_id)
-        vigente = _vigente_ou_404(self._repo_classificacoes, questao_id, taxonomia_id)
+        vigente = self._repo_classificacoes.buscar_vigente(questao_id, taxonomia_id)
         if any(
             d.taxonomia_id == taxonomia_id for d in self._consulta.listar_divergencias_abertas_da_questao(questao_id)
         ):
@@ -147,9 +147,13 @@ class CorrigirClassificacaoUseCase:
             taxonomia=taxonomia,
             questao_id=questao_id,
             correcao=correcao,
-            substitui_classificacao_id=vigente.id,
+            substitui_classificacao_id=vigente.id if vigente is not None else None,
             agora=agora,
         )
+        if vigente is None:
+            # Classificação manual inicial: não há predição da IA a substituir. Uma criação concorrente da
+            # vigente viola o índice único parcial; o handler de IntegrityError em `app.py` a converte em 409.
+            return self._repo_classificacoes.salvar(nova)
         # Não persistir `vigente` antes: `registrar_substituicao` lê o estado vigente no banco.
         return self._repo_classificacoes.registrar_substituicao(vigente, nova)
 

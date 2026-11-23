@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from application.exceptions import (
     ArquivoPdfAusenteError,
@@ -72,6 +73,8 @@ from presentation.api.v1.taxonomias import (
 from presentation.api.v1.taxonomias import (
     router as taxonomias_router,
 )
+
+INDICE_VIGENTE_UNICA = "uq_classificacoes_vigente_por_questao_taxonomia"
 
 
 def create_app(
@@ -172,6 +175,16 @@ def create_app(
     @app.exception_handler(ErroInvarianteDominio)
     def _tratar_invariante(_request: Request, exc: ErroInvarianteDominio) -> JSONResponse:
         return JSONResponse(status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)})
+
+    @app.exception_handler(IntegrityError)
+    def _tratar_conflito_vigente(_request: Request, exc: IntegrityError) -> JSONResponse:
+        # Corrida na criação da Classificação vigente (índice único parcial por Questão e Taxonomia): 409, não 500.
+        if INDICE_VIGENTE_UNICA not in str(exc.orig):
+            raise exc
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={"detail": "A Questão já possui Classificação vigente; recarregue e tente novamente."},
+        )
 
     @app.exception_handler(ArquivoPdfAusenteError)
     def _tratar_pdf_ausente(_request: Request, exc: ArquivoPdfAusenteError) -> JSONResponse:

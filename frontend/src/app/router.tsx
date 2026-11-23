@@ -1,10 +1,10 @@
 import { createBrowserRouter, type RouteObject } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
-import { PlaceholderSectionPage } from "@/components/layout/PlaceholderSectionPage";
 import { RootIndexRedirect } from "@/components/layout/RootIndexRedirect";
 import { TaxonomiaProvider } from "@/components/layout/TaxonomiaContext";
 import { ProvasPage } from "@/features/provas/ProvasPage";
+import { RevisaoPage } from "@/features/revisao/RevisaoPage";
 import { QuestoesPage } from "@/features/questoes/QuestoesPage";
 import { TaxonomiasPage } from "@/features/taxonomias/TaxonomiasPage";
 
@@ -42,7 +42,7 @@ export function createAppRoutes(): RouteObject[] {
         },
         {
           path: "revisao",
-          element: <PlaceholderSectionPage section="revisao" />,
+          element: <RevisaoPage />,
         },
         {
           path: "provas",

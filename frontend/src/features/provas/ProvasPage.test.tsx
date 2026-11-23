@@ -672,7 +672,7 @@ describe("ProvasPage (F7–F12)", () => {
     const revisaoLink = within(cardErro).getByRole("link", { name: "Revisar questões desta prova" });
     expect(revisaoLink).toHaveAttribute(
       "href",
-      `/revisao?taxonomia=${TAXONOMIA_ENADE_ID}&prova_id=prova-erro`,
+      `/revisao?taxonomia=${TAXONOMIA_ENADE_ID}&modo=recorte&prova_id=prova-erro`,
     );
 
     await user.click(revisaoLink);

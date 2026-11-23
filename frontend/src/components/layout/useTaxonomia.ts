@@ -4,6 +4,8 @@ import type { TaxonomiaResponse } from "@/api/taxonomias";
 
 export const TAXONOMIA_STORAGE_KEY = "enade.activeTaxonomiaId";
 export const TAXONOMIA_SEARCH_PARAM = "taxonomia";
+export const REVISAO_MODO_PARAM = "modo";
+export const REVISAO_MODO_RECORTE = "recorte";
 
 export interface TaxonomiaContextValue {
   taxonomias: TaxonomiaResponse[];
@@ -52,5 +54,8 @@ export function buildIngerirHref(taxonomiaId: string | null): string {
 }
 
 export function buildRevisaoProvaHref(provaId: string, taxonomiaId: string | null): string {
-  return `/revisao${buildSearchWithTaxonomia("", taxonomiaId, { prova_id: provaId })}`;
+  return `/revisao${buildSearchWithTaxonomia("", taxonomiaId, {
+    [REVISAO_MODO_PARAM]: REVISAO_MODO_RECORTE,
+    prova_id: provaId,
+  })}`;
 }
