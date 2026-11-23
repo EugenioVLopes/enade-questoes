@@ -1,6 +1,6 @@
 # 09 — Shell global da SPA e seção Provas (Ingestão, Gabarito e Reprocessamento)
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Explicação: [explicacao.md](../explicacao.md) · Glossário: [GLOSSARY.md](../../../GLOSSARY.md) · Decisões: [fluxos da interface web](../decisoes/09-fluxos-interface-web-revisao-consulta.md), [reprocessamento seguro](../decisoes/10-tratamento-edicao-midia-e-casos-borda.md)
 
@@ -35,12 +35,12 @@ Aplicação web navegável com layout fixo (`Questões`, `Revisão` com badge, `
 
 ## Critérios de aceite
 
-- [ ] Seletor global de `Taxonomia` ativa sincroniza com a URL/sessão e carrega automaticamente a `Taxonomia` semeada (`ENADE Engenharia de Computação`).
-- [ ] Pílula do worker local aparece durante `Ingestão`/`Execução de Classificação` ativa com polling ~2 s e desaparece ao concluir.
-- [ ] Formulário de nova `Ingestão` pré-preenche a faixa CE conforme o ano digitado (`2017`/`2019` → `9–35`, `2023` → `10–38`, `2026` → `16–45`), valida PDFs com Zod e envia `POST /api/v1/provas`.
-- [ ] Duplicidade `409` orienta o usuário para atualizar `Gabarito` ou reprocessar a `Prova` existente.
-- [ ] Diálogo de **Reprocessar `Prova`** mantém `sobrescrever_editadas = false` por padrão e modal de **Atualizar `Gabarito`** exibe o resumo *mantidas / alteradas / anuladas*.
-- [ ] `pnpm type-check`, `pnpm lint`, `pnpm test` e `pnpm build` passam sem erro.
+- [x] Seletor global de `Taxonomia` ativa sincroniza com a URL/sessão e carrega automaticamente a `Taxonomia` semeada (`ENADE Engenharia de Computação`).
+- [x] Pílula do worker local aparece durante `Ingestão`/`Execução de Classificação` ativa com polling ~2 s e desaparece ao concluir.
+- [x] Formulário de nova `Ingestão` pré-preenche a faixa CE conforme o ano digitado (`2017`/`2019` → `9–35`, `2023` → `10–38`, `2026` → `16–45`), valida PDFs com Zod e envia `POST /api/v1/provas`.
+- [x] Duplicidade `409` orienta o usuário para atualizar `Gabarito` ou reprocessar a `Prova` existente.
+- [x] Diálogo de **Reprocessar `Prova`** mantém `sobrescrever_editadas = false` por padrão e modal de **Atualizar `Gabarito`** exibe o resumo *mantidas / alteradas / anuladas*.
+- [x] `pnpm type-check`, `pnpm lint`, `pnpm test` e `pnpm build` passam sem erro.
 
 ## Verificação
 
@@ -49,4 +49,18 @@ Aplicação web navegável com layout fixo (`Questões`, `Revisão` com badge, `
 
 ## Evidências e pendências
 
-Pendente de execução.
+- **Cliente HTTP tipado e camada TanStack Query (`frontend/src/api/`)**:
+  - `client.ts`, `errors.ts`, `queryKeys.ts`, `taxonomias.ts`, `provas.ts`, `revisao.ts` e `operacao.ts` tipados sobre `frontend/src/api/schema.d.ts`, com tratamento estruturado de erros HTTP (incluindo `409 Conflict` / `ConflitoProvaResponse` e `422`).
+- **Primitivos `shadcn/ui` + Tailwind (`frontend/src/components/ui/`)**:
+  - 14 componentes base (`alert`, `alert-dialog`, `badge`, `button`, `button-variants`, `card`, `checkbox`, `dialog`, `input`, `label`, `select`, `separator`, `sheet`, `skeleton`) apoiados nos primitivos `@radix-ui/*` adicionados em `frontend/package.json`.
+- **Shell global da SPA e roteamento (`frontend/src/components/layout/`, `frontend/src/app/`)**:
+  - `AppShell.tsx`, `SidebarNav.tsx` (4 seções canônicas de `GLOSSARY.md`: `Questões`, `Revisão` com badge numérico de pendências + divergências na `Taxonomia` ativa, `Provas` e `Taxonomias`), `TaxonomiaContext.tsx`, `useTaxonomia.ts`, `TaxonomiaSelector.tsx` (sincronizado com `?taxonomia=` e `sessionStorage`, padrão `ENADE Engenharia de Computação`), `WorkerStatusPill.tsx` (polling ~2 s enquanto ativo com navegação ao detalhe e invalidação de cache), `PlaceholderSectionPage.tsx`, `RootIndexRedirect.tsx` e `router.tsx`.
+- **Seção `Provas` (`frontend/src/features/provas/`)**:
+  - `ProvasPage.tsx`, `ProvaCard.tsx`, `IngestaoFormDialog.tsx` (validação Zod de PDFs, `"Opções avançadas"` com faixa CE pré-preenchida por ano via `faixasEnade.ts`, classificação automática marcada por padrão e atalhos em duplicidade `409`), `AtualizarGabaritoDialog.tsx` (resumo *mantidas / alteradas / anuladas*), `ReprocessarProvaDialog.tsx` (`sobrescrever_editadas = false` por padrão), `ingestaoSchema.ts` e `provasStatus.ts`.
+- **Verificações executadas (`frontend/`)**:
+  - `pnpm type-check` → exit code `0`.
+  - `pnpm lint` e `pnpm exec eslint . --max-warnings=0` → exit code `0` (0 erros, 0 avisos).
+  - `pnpm test` → `4 passed` (`26 passed`: `client.test.ts` 8, `App.test.tsx` 1, `AppShell.test.tsx` 5, `ProvasPage.test.tsx` 12).
+  - `pnpm build` → exit code `0`.
+- **Pendências**:
+  - Validação manual ponta a ponta no navegador contra backend FastAPI + PostgreSQL local fica consolidada no Checkpoint 3 / Tarefa 15.
