@@ -112,7 +112,6 @@ export interface MarkdownContentProps {
   className?: string;
 }
 
-/** Renderiza Markdown GFM + fórmulas KaTeX com sanitização estrita (sem `dangerouslySetInnerHTML`). */
 export function MarkdownContent({ source, className }: MarkdownContentProps) {
   return (
     <div className={cn("markdown-content break-words text-sm", className)}>

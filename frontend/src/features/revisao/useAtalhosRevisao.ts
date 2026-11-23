@@ -5,9 +5,7 @@ interface AcoesAtalhosRevisao {
   editar?: () => void;
   anterior?: () => void;
   proxima?: () => void;
-  /** Fecha a edição. O Esc do lightbox (Dialog do Radix) é do próprio Dialog: use `bloqueado`. */
   fechar?: () => void;
-  /** Enquanto verdadeiro (ex.: lightbox aberto) nenhum atalho age. */
   bloqueado?: boolean;
 }
 
@@ -25,7 +23,6 @@ function alvoEhCampoDeEntrada(alvo: EventTarget | null): boolean {
   return alvo.closest('[role="listbox"], [role="combobox"], [role="dialog"], [role="alertdialog"]') !== null;
 }
 
-/** Atalhos da Revisão (A, E, setas, Esc), ignorados quando o foco está em campo de entrada. */
 export function useAtalhosRevisao(acoes: AcoesAtalhosRevisao): void {
   const ref = useRef(acoes);
   useEffect(() => {

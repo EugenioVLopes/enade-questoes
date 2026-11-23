@@ -156,7 +156,6 @@ def test_corrigir_cria_humana_e_preserva_a_predicao_da_ia(
         assert original.revisada_em is None
         assert sum(1 for linha in linhas if linha.vigente) == 1
 
-        # taxonomia inexistente -> 404 (sem vigente passou a criar a humana inicial: ver teste dedicado)
         assert (
             client.post(
                 f"/api/v1/questoes/{questao.id}/classificacoes/{uuid4()}/corrigir",
@@ -182,7 +181,7 @@ def test_corrigir_sem_vigente_cria_humana_inicial_sem_substituicao(
 
     with TestClient(criar_app(db_teste_url, tmp_path)) as client:
         for corpo in (
-            {"disciplina_principal": "legada"},  # arquivada
+            {"disciplina_principal": "legada"},
             {"disciplina_principal": "inexistente"},
             {"disciplina_principal": "redes", "disciplinas_secundarias": ["redes"]},
         ):
@@ -210,7 +209,6 @@ def test_corrigir_sem_vigente_cria_humana_inicial_sem_substituicao(
         (linha,) = _linhas(repos, questao.id)
         assert linha.vigente is True
 
-        # agora há vigente: a próxima correção substitui (não cria segunda vigente)
         resp2 = client.post(url, json={"disciplina_principal": "algoritmos"})
         assert resp2.status_code == 201, resp2.text
         assert resp2.json()["substitui_classificacao_id"] == corpo["id"]
@@ -245,7 +243,6 @@ def test_corrigir_sem_vigente_em_corrida_com_outra_vigente_retorna_409_e_nao_500
     repos, tax, _, prova = _preparar(session_factory_teste)
     questao = criar_questao(repos, prova, 14, "Questão cuja vigente surge durante a correção.")
     classificar(repos, questao, tax, "redes", status=StatusClassificacao.APROVADA, origem=OrigemClassificacao.HUMANA)
-    # Simula a corrida: a leitura do caso de uso não enxerga a vigente que já existe no banco.
     monkeypatch.setattr(type(repos.classificacoes), "buscar_vigente", lambda self, questao_id, taxonomia_id: None)
     with TestClient(criar_app(db_teste_url, tmp_path), raise_server_exceptions=False) as client:
         resp = client.post(

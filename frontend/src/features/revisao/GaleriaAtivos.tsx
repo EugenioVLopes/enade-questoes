@@ -5,12 +5,10 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 
 export interface GaleriaAtivosProps {
   ativos: readonly AtivoVisualResponse[];
-  /** Prefixo do texto alternativo/rótulo (ex.: "Ativo Visual do enunciado"). */
   rotulo: string;
   onAbertoChange?: (aberto: boolean) => void;
 }
 
-/** Miniaturas clicáveis de Ativos Visuais com lightbox (Dialog do Radix, que cuida do Esc e do foco). */
 export function GaleriaAtivos({ ativos, rotulo, onAbertoChange }: GaleriaAtivosProps) {
   const [aberto, setAberto] = useState<AtivoVisualResponse | null>(null);
 

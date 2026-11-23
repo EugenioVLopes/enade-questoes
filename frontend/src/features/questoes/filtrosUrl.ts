@@ -235,7 +235,6 @@ export function buildRevisaoRecorteHrefDeFiltros(
   if (taxonomiaId) {
     params.set(TAXONOMIA_SEARCH_PARAM, taxonomiaId);
   }
-  // Marcador explícito: distingue o recorte da Revisão do modo abas (`aba=...`), mesmo sem nenhum filtro.
   params.set(REVISAO_MODO_PARAM, REVISAO_MODO_RECORTE);
   const valores: [string, string | undefined][] = [
     ["q", filtros.q],

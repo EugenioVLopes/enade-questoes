@@ -83,7 +83,6 @@ export interface ComparadorDivergenciaProps {
   nomes: NomesDisciplinas;
 }
 
-/** Comparador lado a lado: Classificação humana vigente × candidata da IA, destacando as diferenças. */
 export function ComparadorDivergencia({ vigente, divergencia, nomes }: ComparadorDivergenciaProps) {
   const linhas = montarLinhas(vigente, divergencia, nomes);
   return (

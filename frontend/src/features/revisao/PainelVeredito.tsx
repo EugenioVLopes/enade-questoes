@@ -15,12 +15,9 @@ export interface PainelVereditoProps {
   questao: DetalheQuestaoResponse;
   taxonomia: TaxonomiaResponse;
   nomes: NomesDisciplinas;
-  /** Formulário de edição aberto (atalho `E` / botões "Corrigir e aprovar", "Editar classificação"). */
   editando: boolean;
   onEditandoChange: (editando: boolean) => void;
-  /** Operação de veredito em andamento (desabilita as ações). */
   ocupado: boolean;
-  /** Erro da última operação (409/422/...), exibido sem fechar o formulário. */
   erro: string | null;
   onAprovar: () => void;
   onCorrigir: (correcao: CorrigirClassificacaoRequest) => void;
@@ -63,8 +60,6 @@ export function PainelVeredito({
       }
     : undefined;
 
-  // Formulário único e com key estável para criação ("Sem classificação") e edição: um refetch
-  // (após erro 409 ou foco da janela) pode trocar o ramo do painel sem desmontar nem perder o texto digitado.
   const mostrarFormulario = !vigente || editando;
   const edicao = divergencia
     ? { rotulo: "Resolver com edição manual", enviar: (c: CorrigirClassificacaoRequest) => onResolver("editar_manualmente", c) }

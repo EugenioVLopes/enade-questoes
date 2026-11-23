@@ -1,5 +1,4 @@
-import type { ListarQuestoesParams } from "@/api/questoes";
-import { TAMANHO_PAGINA_FILA } from "@/api/revisao";
+import { TAMANHO_PAGINA_FILA, type FilaRevisaoParams } from "@/api/revisao";
 import {
   REVISAO_MODO_PARAM,
   REVISAO_MODO_RECORTE,
@@ -36,8 +35,7 @@ export function parseRevisaoUrl(search: URLSearchParams): EstadoUrlRevisao {
   return { modo: { tipo: "abas", aba }, questaoId };
 }
 
-/** Parâmetros da listagem da fila (sem `pagina`: a paginação é feita pela consulta infinita). */
-export function paramsDaFila(modo: ModoRevisao, taxonomiaId: string): ListarQuestoesParams {
+export function paramsDaFila(modo: ModoRevisao, taxonomiaId: string): FilaRevisaoParams {
   if (modo.tipo === "recorte") {
     const params = filtrosParaApi(modo.filtros, taxonomiaId, TAMANHO_PAGINA_FILA);
     delete params.pagina;
@@ -48,19 +46,16 @@ export function paramsDaFila(modo: ModoRevisao, taxonomiaId: string): ListarQues
     case "pendentes":
       return { ...base, status_revisao: "pendente", ordenacao: "fila_revisao" };
     case "divergencias":
-      // A API não ordena por execução mais recente; usa a ordenação de consulta (ano desc, número asc).
       return { ...base, com_divergencia: true, ordenacao: "consulta" };
     case "disciplina_arquivada":
       return { ...base, usa_disciplina_arquivada: true, ordenacao: "consulta" };
   }
 }
 
-/** Identifica fila + questão da URL, para detectar navegação do usuário durante uma operação assíncrona. */
 export function assinaturaDaUrl(search: URLSearchParams): string {
   return [search.get(REVISAO_MODO_PARAM), search.get(ABA_PARAM), search.get(QUESTAO_PARAM)].join("|");
 }
 
-/** Atualiza a URL trocando só a questão selecionada (preserva modo, aba, recorte e Taxonomia). */
 export function comQuestao(prev: URLSearchParams, questaoId: string | null): URLSearchParams {
   const next = new URLSearchParams(prev);
   if (questaoId) {
@@ -71,7 +66,6 @@ export function comQuestao(prev: URLSearchParams, questaoId: string | null): URL
   return next;
 }
 
-/** Troca de aba: sai do recorte, preserva só a Taxonomia e limpa a questão selecionada. */
 export function comAba(prev: URLSearchParams, aba: AbaRevisao): URLSearchParams {
   const next = new URLSearchParams();
   const taxonomia = prev.get(TAXONOMIA_SEARCH_PARAM);

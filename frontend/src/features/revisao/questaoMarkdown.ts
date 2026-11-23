@@ -10,7 +10,6 @@ export function rotuloGabarito(gabarito: DetalheQuestaoResponse["gabarito"]): st
   return "pendente";
 }
 
-/** Formato do "Copiar questão em Markdown": cabeçalho, enunciado, alternativas e linha de Gabarito. */
 export function montarQuestaoMarkdown(questao: DetalheQuestaoResponse): string {
   const { prova } = questao;
   const alternativas = questao.alternativas.map((alt) => `**${alt.letra})** ${alt.texto}`);

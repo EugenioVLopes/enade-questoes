@@ -27,11 +27,9 @@ export interface FormularioClassificacaoProps {
   inicial?: Partial<ValoresClassificacao>;
   rotuloEnvio: string;
   enviando: boolean;
-  /** Mensagem de erro da API (409/422): exibida sem descartar o que foi digitado. */
   erro: string | null;
   onEnviar: (correcao: CorrigirClassificacaoRequest) => void;
   onCancelar?: () => void;
-  /** Notifica que o usuário alterou algum campo do formulário (preserva edição aberta em refetch). */
   onAlterar?: () => void;
 }
 
@@ -65,7 +63,6 @@ export function FormularioClassificacao({
 
   function definirPrincipal(codigo: string) {
     setPrincipal(codigo);
-    // A principal nunca pode repetir-se entre as secundárias (a API rejeita com 422).
     setSecundarias((atuais) => atuais.filter((s) => s !== codigo));
     onAlterar?.();
   }

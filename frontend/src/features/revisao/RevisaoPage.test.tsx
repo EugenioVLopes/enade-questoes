@@ -119,17 +119,12 @@ interface Servidor {
   arquivada: string[];
   recorte: string[];
   detalhes: Map<string, DetalheQuestaoResponse>;
-  /** Tamanho de página devolvido pela API nas listagens da fila (força a paginação sob demanda). */
   tamanhoFila?: number;
-  /** Respostas de erro para a próxima chamada de POST em um sufixo de path. */
   erros: Map<string, { status: number; detail: unknown }>;
   chamadas: Chamada[];
-  /** Quando definida, a resposta de aprovar só sai depois que esta promessa resolver. */
   portaAprovar?: Promise<void>;
   perfis: { id: string; codigo: string; versao: string }[];
-  /** Simula queda de rede: toda chamada rejeita como o `fetch` do navegador. */
   redeFora?: boolean;
-  /** Quando definida, todo POST em `/questoes/{id}/...` (inclusive os que respondem erro) espera esta promessa. */
   portaPost?: Promise<void>;
 }
 
@@ -401,7 +396,6 @@ describe("RevisaoPage: aprovar e avançar", () => {
     expect(router.state.location.search).toContain("questao=q2");
     expect(filas(servidor).length).toBeGreaterThan(filasAntes);
     expect(badge(servidor).length).toBeGreaterThan(badgeAntes);
-    // a aprovada saiu da fila: agora 1 de 2 e contador da aba reduzido
     expect(screen.getByTestId("revisao-posicao")).toHaveTextContent("1 de 2");
     expect(screen.getByRole("tab", { name: "Pendentes (2)" })).toBeInTheDocument();
   });
@@ -436,10 +430,8 @@ describe("RevisaoPage: regressões da revisão do gate", () => {
     renderRevisao(`/revisao?taxonomia=${TAX_ID}`, servidor);
     await screen.findByRole("heading", { name: "Questão Nº 1" });
     await user.click(screen.getByRole("button", { name: "Corrigir e aprovar" }));
-    // inicial: principal redes, secundária algoritmos; troca a principal para algoritmos.
     expect(screen.getByRole("combobox", { name: "Disciplina secundária 1" })).toHaveTextContent("Algoritmos");
     await escolher(user, "Disciplina principal", "Algoritmos");
-    // K5: a secundária igual à nova principal deixa de estar selecionada na UI.
     expect(screen.getByRole("combobox", { name: "Disciplina principal" })).toHaveTextContent("Algoritmos");
     expect(screen.getByRole("combobox", { name: "Disciplina secundária 1" })).toHaveTextContent("Nenhuma");
     expect(screen.getByRole("combobox", { name: "Disciplina secundária 1" })).not.toHaveTextContent("Algoritmos");
@@ -493,7 +485,6 @@ describe("RevisaoPage: regressões da revisão do gate", () => {
     const just = screen.getByLabelText("Justificativa");
     await user.clear(just);
     await user.type(just, "Texto digitado");
-    // O estado real muda no servidor (outra sessão aprovou): o refetch troca o ramo do painel.
     const d = servidor.detalhes.get("q1")!;
     servidor.detalhes.set("q1", { ...d, classificacao_vigente: { ...d.classificacao_vigente!, status: "aprovada" } });
     const filasAntes = filas(servidor).length;
@@ -548,7 +539,6 @@ describe("RevisaoPage: regressões da revisão do gate", () => {
     await user.clear(just);
     await user.type(just, "Texto digitado");
 
-    // Outra sessão aprovou q1: ela sai da fila de Pendentes e muda de status no detalhe.
     servidor.pendentes = ["q2", "q3"];
     const d = servidor.detalhes.get("q1")!;
     servidor.detalhes.set("q1", { ...d, classificacao_vigente: { ...d.classificacao_vigente!, status: "aprovada" } });
@@ -628,7 +618,6 @@ describe("RevisaoPage: regressões da revisão do gate", () => {
     const just = screen.getByLabelText("Justificativa");
     await user.type(just, "Texto PA");
 
-    // Outra sessão ou IA concluiu classificação vigente antes do POST.
     servidor.detalhes.set("q1", detalhe("q1", 1));
     await user.click(screen.getByRole("button", { name: "Salvar classificação" }));
 
@@ -683,7 +672,6 @@ describe("RevisaoPage: corrigir e aprovar", () => {
     await screen.findByRole("heading", { name: "Questão Nº 1" });
     await user.click(screen.getByRole("button", { name: "Corrigir e aprovar" }));
 
-    // Disciplina arquivada não é oferecida; a principal escolhida sai das secundárias.
     await user.click(screen.getByRole("combobox", { name: "Disciplina principal" }));
     expect(screen.queryByRole("option", { name: "Legada" })).not.toBeInTheDocument();
     await user.click(await screen.findByRole("option", { name: "Banco de Dados" }));
@@ -789,7 +777,6 @@ describe("RevisaoPage: Divergências", () => {
     const tabela = await abrir(servidor);
     const linhas = within(tabela).getAllByRole("row");
     const marcadas = linhas.filter((l) => l.getAttribute("data-diferente") === "true");
-    // principal, secundárias, tópicos, justificativa e execução diferem nesta fixture
     expect(marcadas).toHaveLength(5);
     expect(within(tabela).getByText("Vigente humana")).toBeInTheDocument();
     expect(within(tabela).getByText("Candidata IA")).toBeInTheDocument();
@@ -978,7 +965,6 @@ describe("RevisaoPage: atalhos de teclado", () => {
     expect(router.state.location.search).toContain("questao=q2");
     expect(screen.getByRole("heading", { name: "Questão Nº 2" })).toBeInTheDocument();
 
-    // foco em um select (combobox do Radix) também bloqueia
     screen.getByRole("combobox", { name: "Disciplina principal" }).focus();
     await user.keyboard("{ArrowLeft}");
     expect(router.state.location.search).toContain("questao=q2");

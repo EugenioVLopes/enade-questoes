@@ -40,7 +40,6 @@ import {
 } from "@/features/revisao/revisaoUrl";
 
 export interface RevisaoPageProps {
-  /** Ponto de encaixe da Tarefa 13: "Editar conteúdo" e "Ver página do PDF" na coluna de leitura. */
   renderAcoesQuestao?: (questao: DetalheQuestaoResponse) => ReactNode;
 }
 
@@ -55,7 +54,6 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
   const queryClient = useQueryClient();
   const { activeTaxonomiaId, activeTaxonomia, isLoading: taxonomiasLoading, error: taxonomiasError } = useTaxonomia();
 
-  // Estado mais recente da URL: continuações assíncronas (avanço após veredito) não podem usar um `prev` obsoleto.
   const urlAtualRef = useRef(searchParams);
   useEffect(() => {
     urlAtualRef.current = searchParams;
@@ -63,7 +61,6 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
 
   const estado = useMemo(() => parseRevisaoUrl(searchParams), [searchParams]);
   const modo: ModoRevisao = useMemo(() => {
-    // Disciplina de outra Taxonomia seria rejeitada pela API: só vale se pertencer à Taxonomia ativa.
     if (estado.modo.tipo === "recorte" && activeTaxonomia && estado.modo.filtros.disciplina_id) {
       const alvo = estado.modo.filtros.disciplina_id.toLowerCase();
       const disciplina = activeTaxonomia.disciplinas.find((d) => d.id.toLowerCase() === alvo);
@@ -86,8 +83,6 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
   const total = fila.data?.pages.at(-1)?.total ?? 0;
   const contadores = fila.data?.pages[0]?.contadores ?? null;
 
-  // Mantém a questão atual fixada entre o erro de veredito e o commit de `setSearchParams` (v7_startTransition),
-  // impedindo que o refetch da fila troque `selecionadaId` para `itens[0]` nesse intervalo.
   const [questaoFixada, setQuestaoFixada] = useState<{ id: string; searchAntes: string } | null>(null);
   const selecionadaId =
     estado.questaoId ??
@@ -96,7 +91,6 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
     null;
   const indice = selecionadaId ? itens.findIndex((item) => item.id === selecionadaId) : -1;
 
-  // `questao=<id>` fora das páginas já carregadas: carrega as seguintes até posicionar (ou esgotar a fila).
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = fila;
   useEffect(() => {
     if (estado.questaoId && indice < 0 && fila.data && hasNextPage && !isFetchingNextPage) {
@@ -117,8 +111,6 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
   const ocupado = aprovar.isPending || corrigir.isPending || resolver.isPending;
   const vereditoEmAndamentoRef = useRef(false);
 
-  // Estado de interface por questão: trocar de questão ou de Taxonomia descarta a edição aberta (efeito abaixo);
-  // erros e execuções ficam ligados ao id da questão.
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [erroVeredito, setErroVeredito] = useState<{ id: string; mensagem: string } | null>(null);
   const [execucaoCriada, setExecucaoCriada] = useState<{ id: string; execucaoId: string } | null>(null);
@@ -139,7 +131,6 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
     setSearchParams(proxima, { replace: true });
   }
 
-  /** Busca a página seguinte da fila e devolve os ids de todas as páginas já carregadas. */
   async function buscarProximaPagina(): Promise<string[]> {
     const resultado = await fila.fetchNextPage();
     return idsDaFila(resultado.data);
@@ -168,9 +159,7 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
     }
   }
 
-  /** Avança para o item seguinte da fila já atualizada (o aprovado some de Pendentes; no recorte permanece). */
   async function avancarAposVeredito(idsAntes: readonly string[], idAtual: string, assinaturaAntes: string) {
-    // Se a aba, o recorte ou a questão mudaram durante a operação, o usuário já escolheu outro destino.
     const irSeInalterada = (id: string | null) => {
       if (assinaturaDaUrl(urlAtualRef.current) === assinaturaAntes) {
         irPara(id);
@@ -213,8 +202,6 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
         if (opcoes?.manterEdicaoNoErro) {
           setEditandoId(idAtual);
         }
-        // Fixa `questao=<idAtual>` na URL se o usuário não navegou para outro lugar:
-        // evita que o refetch da fila remova o item e troque a questão selecionada, escondendo o erro/formulário.
         if (
           assinaturaDaUrl(urlAtualRef.current) === assinaturaAntes &&
           parseRevisaoUrl(urlAtualRef.current).questaoId !== idAtual
@@ -222,7 +209,6 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
           setQuestaoFixada({ id: idAtual, searchAntes: urlAtualRef.current.toString() });
           irPara(idAtual);
         }
-        // O estado real pode ter mudado (ex.: 409 por já aprovada): refaz detalhe, fila e contadores.
         void queryClient.invalidateQueries({ queryKey: queryKeys.questoes.all });
         return;
       }

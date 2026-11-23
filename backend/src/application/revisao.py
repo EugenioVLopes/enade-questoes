@@ -151,8 +151,6 @@ class CorrigirClassificacaoUseCase:
             agora=agora,
         )
         if vigente is None:
-            # Classificação manual inicial: não há predição da IA a substituir. Uma criação concorrente da
-            # vigente viola o índice único parcial; o handler de IntegrityError em `app.py` a converte em 409.
             return self._repo_classificacoes.salvar(nova)
         # Não persistir `vigente` antes: `registrar_substituicao` lê o estado vigente no banco.
         return self._repo_classificacoes.registrar_substituicao(vigente, nova)

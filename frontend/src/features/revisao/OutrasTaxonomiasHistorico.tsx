@@ -24,7 +24,6 @@ export interface OutrasTaxonomiasHistoricoProps {
   nomes: NomesDisciplinas;
 }
 
-/** Acordeão recolhido por padrão: Classificações em outras Taxonomias e histórico imutável da Taxonomia ativa. */
 export function OutrasTaxonomiasHistorico({ outrasTaxonomias, historico, nomes }: OutrasTaxonomiasHistoricoProps) {
   const [aberto, setAberto] = useState(false);
   const rotulo = `Outras taxonomias (${outrasTaxonomias.length}) e histórico`;

@@ -12,7 +12,6 @@ export interface ResumoClassificacaoProps {
   nomes: NomesDisciplinas;
 }
 
-/** Disciplina principal, secundárias, Tópicos e justificativa de uma Classificação. */
 export function ResumoClassificacao({ classificacao, nomes }: ResumoClassificacaoProps) {
   return (
     <div className="space-y-2 text-sm">

@@ -20,7 +20,6 @@ const ROTULOS_ALERTA: Record<AlertaExtracaoResponse["codigo"], string> = {
 
 export interface QuestaoLeituraProps {
   questao: DetalheQuestaoResponse;
-  /** Ponto de encaixe da Tarefa 13 ("Editar conteúdo", "Ver página do PDF"). */
   acoesExtras?: ReactNode;
   onLightboxChange?: (aberto: boolean) => void;
 }

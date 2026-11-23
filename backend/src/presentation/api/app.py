@@ -178,7 +178,6 @@ def create_app(
 
     @app.exception_handler(IntegrityError)
     def _tratar_conflito_vigente(_request: Request, exc: IntegrityError) -> JSONResponse:
-        # Corrida na criação da Classificação vigente (índice único parcial por Questão e Taxonomia): 409, não 500.
         if INDICE_VIGENTE_UNICA not in str(exc.orig):
             raise exc
         return JSONResponse(

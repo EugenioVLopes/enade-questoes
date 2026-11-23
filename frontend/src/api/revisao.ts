@@ -60,7 +60,6 @@ export type CorrigirClassificacaoRequest = components["schemas"]["CorrigirClassi
 export type ResolverDivergenciaRequest = components["schemas"]["ResolverDivergenciaRequest"];
 type ResolverDivergenciaResponse = components["schemas"]["ResolverDivergenciaResponse"];
 
-/** Itens por página da fila de Revisão (máximo aceito pela API). */
 export const TAMANHO_PAGINA_FILA = 200;
 
 const rotaQuestao = (questaoId: string) => `/api/v1/questoes/${encodeURIComponent(questaoId)}`;
@@ -85,13 +84,14 @@ export function useQuestaoDetalheQuery(
   });
 }
 
-/** Fila de Revisão: páginas de `TAMANHO_PAGINA_FILA` itens, a seguinte sob demanda (`params` sem `pagina`). */
-export function useFilaRevisaoQuery(params: ListarQuestoesParams | null) {
+export type FilaRevisaoParams = Omit<ListarQuestoesParams, "pagina">;
+
+export function useFilaRevisaoQuery(params: FilaRevisaoParams | null) {
   return useInfiniteQuery({
     queryKey: queryKeys.questoes.fila(params ?? {}),
     queryFn: ({ pageParam }) =>
       apiRequest<ListaQuestoesResponse>("/api/v1/questoes", {
-        query: { ...(params as ListarQuestoesParams), pagina: pageParam },
+        query: { ...(params as FilaRevisaoParams), pagina: pageParam },
       }),
     initialPageParam: 1,
     getNextPageParam: (ultima) =>
@@ -142,8 +142,6 @@ function resolverDivergencia({
   );
 }
 
-// Todo veredito invalida `questoes.all`: fila, detalhe e o badge global (`questoes.contadores`).
-// As mutations devolvem a promessa da invalidação para o chamador só avançar com a fila já atualizada.
 function useInvalidarQuestoes() {
   const queryClient = useQueryClient();
   return () => queryClient.invalidateQueries({ queryKey: queryKeys.questoes.all });
