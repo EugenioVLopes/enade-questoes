@@ -1,6 +1,6 @@
 # 10 — Seção Taxonomias, Perfis de Classificação e Execuções
 
-Status: `pendente`
+Status: `em andamento` (implementação verificada pelo gate; victory audit interrompido, pendente de reexecução)
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Decisões: [modelo de domínio](../decisoes/06-modelo-de-dominio-e-glossario.md), [fluxos de taxonomias e execuções](../decisoes/09-fluxos-interface-web-revisao-consulta.md)
 
@@ -33,11 +33,11 @@ Seção `Taxonomias` operacional no frontend permitindo gerenciar `Taxonomia`s e
 
 ## Critérios de aceite
 
-- [ ] É possível criar/editar `Taxonomia` e `Disciplina`, e arquivar/reativar `Disciplina` vendo no modal de confirmação o número de `Classificação`s vigentes impactadas.
-- [ ] "Criar nova versão" de `Perfil de Classificação` herda os campos do perfil base, mantém `template_prompt` em seção "Avançado" e gera nova versão imutável.
-- [ ] Formulário de `Execução de Classificação` envia `incluir_revisadas = false` por padrão e suporta todos os escopos acordados.
-- [ ] Aba `Execuções` exibe métricas da rodada e habilita **"Retomar / Reprocessar falhas"** apenas para status `interrompida` ou `concluida_com_erros`.
-- [ ] `pnpm type-check`, `pnpm lint`, `pnpm test` e `pnpm build` passam sem erro.
+- [x] É possível criar/editar `Taxonomia` e `Disciplina`, e arquivar/reativar `Disciplina` vendo no modal de confirmação o número de `Classificação`s vigentes impactadas. (Coberto por `TaxonomiasPage.test.tsx`; validação manual no navegador fica na Tarefa 15.)
+- [x] "Criar nova versão" de `Perfil de Classificação` herda os campos do perfil base, mantém `template_prompt` em seção "Avançado" e gera nova versão imutável. (Coberto por `TaxonomiasPage.test.tsx`.)
+- [x] Formulário de `Execução de Classificação` envia `incluir_revisadas = false` por padrão e suporta todos os escopos acordados. (Coberto por `TaxonomiasPage.test.tsx`; compara o corpo exato da requisição.)
+- [x] Aba `Execuções` exibe métricas da rodada e habilita **"Retomar / Reprocessar falhas"** apenas para status `interrompida` ou `concluida_com_erros`. (Coberto por `TaxonomiasPage.test.tsx`.)
+- [x] `pnpm type-check`, `pnpm lint`, `pnpm test` e `pnpm build` passam sem erro. (Executados na rodada r3: todos com exit code 0; `pnpm test` com 46 testes.)
 
 ## Verificação
 
@@ -46,4 +46,27 @@ Seção `Taxonomias` operacional no frontend permitindo gerenciar `Taxonomia`s e
 
 ## Evidências e pendências
 
-Pendente de execução.
+**Implementação** (`frontend/src/features/taxonomias/`, `frontend/src/api/taxonomias.ts`, `frontend/src/api/execucoes.ts`, `frontend/src/api/operacao.ts`, `frontend/src/components/ui/textarea.tsx`, `frontend/src/app/router.tsx`). Nenhuma alteração no backend.
+
+**Gate de verificação**: três iterações.
+- Iteração r1 (worker, verificação): reprovada. Achados: teste de métricas instável, aba Execuções mostrando rodadas de outra Taxonomia, retomada concorrente, criação com refetch falho e schema de nova versão sem campos obrigatórios.
+- Iteração r2: reprovada. Achados: teste de regressão que não protegia a correção, erro silencioso no refetch, retomada concorrente que sobrevivia mal à troca de aba e edição de Disciplina após troca de Taxonomia.
+- Iteração r3: aprovada. Reviewers `APPROVE` (requisitos e padrões), challengers `CONFIRMED` (entradas e contratos; estado e tempo) e auditor forense `CLEAN`. Mutações nas correções de M2, C1, C2 e C4 derrubaram os testes correspondentes.
+
+**Comandos executados na r3** (em `frontend/`):
+- `pnpm type-check`: exit 0
+- `pnpm lint`: exit 0
+- `pnpm test`: exit 0, 5 arquivos, 46 testes
+- `pnpm build`: exit 0 (aviso de tamanho de chunk)
+- `pnpm exec vitest run src/features/taxonomias`: 5 execuções seguidas, exit 0 em todas (20/20)
+
+**Pendências**:
+- Victory audit (independente, Fase 7) interrompido antes de concluir. Sem veredito `VICTORY CONFIRMED`. Reexecução pendente.
+- Validação manual no navegador contra o backend real: fora desta tarefa (Tarefa 15).
+- Lacunas de cobertura: três guardas (`api/execucoes.ts`, duplicata do cache de retomada e reset do diálogo Arquivar) sem teste que as discrimine.
+- Baixas do challenger de estado: aba Execuções com Taxonomias vazia e listagem falhando mostra erro em vez de "Selecione uma Taxonomia"; erro de retomada com aba desmontada se perde; fechar diálogo de criar Taxonomia durante o POST descarta o aviso de refetch falho.
+- Teste do POST de perfil usa `toMatchObject`, que não pega campo extra no corpo.
+- Divergências registradas, fora de escopo: `divergencias_abertas` é contador da rodada e nunca decrementa no backend (`backend/src/domain/classificacao.py:344-345`); a pílula do worker não filtra execuções por Taxonomia (`WorkerStatusPill.tsx:11`); o indicador "usa disciplina arquivada" nas Classificações só existe na API de Questões (Tarefa 11).
+- Formatação (prettier ausente no projeto) e rótulos de escopo duplicados não corrigidos.
+- Decisão de escopo do usuário: `codigo` obrigatório na criação de Taxonomia; `codigo` de Disciplina somente leitura na edição.
+- Decisão do usuário: trabalho feito na branch `main`, sem branch própria, como orientado.
