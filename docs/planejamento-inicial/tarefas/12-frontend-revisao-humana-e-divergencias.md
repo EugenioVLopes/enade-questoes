@@ -1,6 +1,6 @@
 # 12 — Seção Revisão (tela dividida 60/40, fila priorizada, divergências e atalhos)
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Explicação: [explicacao.md](../explicacao.md) · Decisões: [fluxos de revisão e divergências](../decisoes/09-fluxos-interface-web-revisao-consulta.md), [renderização Markdown + KaTeX](../decisoes/10-tratamento-edicao-midia-e-casos-borda.md)
 
@@ -37,12 +37,12 @@ Workspace de `Revisão` operacional com 3 abas (`Pendentes`, `Divergências`, `D
 
 ## Critérios de aceite
 
-- [ ] Renderizador Markdown GFM + KaTeX exibe tabelas, blocos de código e fórmulas `$...$`/`$$...$$` e bloqueia scripts/HTML arbitrário (coberto por teste de sanitização).
-- [ ] Aba `Pendentes` respeita a priorização, permite aprovar em 1 clique ou corrigir (1 principal + 0–2 secundárias) e avança automaticamente na fila atualizando o badge global.
-- [ ] Aba `Divergências` exibe comparador lado a lado e executa `manter_humana`, `aceitar_candidata` e `editar_manualmente` via API.
-- [ ] Acordeão "Outras taxonomias e histórico" mostra classificações de outras taxonomias e histórico imutável sem trocar de tela.
-- [ ] Atalhos `A`, `E`, `←`/`→` e `Esc` funcionam no modo leitura e são ignorados com foco dentro de campos de formulário.
-- [ ] `pnpm type-check`, `pnpm lint`, `pnpm test` e `pnpm build` passam sem erro.
+- [x] Renderizador Markdown GFM + KaTeX exibe tabelas, blocos de código e fórmulas `$...$`/`$$...$$` e bloqueia scripts/HTML arbitrário (coberto por teste de sanitização).
+- [x] Aba `Pendentes` respeita a priorização, permite aprovar em 1 clique ou corrigir (1 principal + 0–2 secundárias) e avança automaticamente na fila atualizando o badge global.
+- [x] Aba `Divergências` exibe comparador lado a lado e executa `manter_humana`, `aceitar_candidata` e `editar_manualmente` via API.
+- [x] Acordeão "Outras taxonomias e histórico" mostra classificações de outras taxonomias e histórico imutável sem trocar de tela.
+- [x] Atalhos `A`, `E`, `←`/`→` e `Esc` funcionam no modo leitura e são ignorados com foco dentro de campos de formulário.
+- [x] `pnpm type-check`, `pnpm lint`, `pnpm test` e `pnpm build` passam sem erro.
 
 ## Verificação
 
@@ -51,4 +51,25 @@ Workspace de `Revisão` operacional com 3 abas (`Pendentes`, `Divergências`, `D
 
 ## Evidências e pendências
 
-Pendente de execução.
+**Implementação**:
+- **Renderizador técnico reutilizável (`frontend/src/components/markdown/`)**: `MarkdownContent.tsx` e `linguagens.ts` usando `react-markdown`, `remark-gfm`, `remark-math`, `rehype-katex` e `rehype-highlight`, com HTML bruto desabilitado e CSS do `katex` alinhado em `frontend/src/main.tsx`.
+- **Seção `Revisão` (`frontend/src/features/revisao/`)**:
+  - `RevisaoPage.tsx` (rota `revisao` em `frontend/src/app/router.tsx`, removendo `PlaceholderSectionPage.tsx`), `revisaoUrl.ts` (3 abas `Pendentes`, `Divergências`, `Disciplina arquivada` + modo `modo=recorte` integrado com `frontend/src/features/questoes/filtrosUrl.ts` e `frontend/src/components/layout/useTaxonomia.ts`), `QuestaoLeitura.tsx`, `GaleriaAtivos.tsx`, `questaoMarkdown.ts` (cópia da questão em Markdown), `PainelVeredito.tsx`, `FormularioClassificacao.tsx`, `ComparadorDivergencia.tsx`, `ResumoClassificacao.tsx`, `OutrasTaxonomiasHistorico.tsx`, `classificacaoUtils.ts` e `useAtalhosRevisao.ts`.
+  - Ponto de encaixe `renderAcoesQuestao` em `RevisaoPage.tsx` reservado para os botões da Tarefa 13 ("Editar conteúdo" e "Ver página do PDF").
+- **Cliente HTTP (`frontend/src/api/`)**: `revisao.ts` (detalhe da questão, fila infinita de 200 itens por página, mutations `aprovar`, `corrigir` e `resolver` invalidando `queryKeys.questoes.all`) e `queryKeys.ts`.
+- **Backend (mudança mínima, autorizada)**: `backend/src/application/revisao.py` permite criar classificação humana via `POST /corrigir` quando a questão ainda não possui classificação vigente; `backend/src/presentation/api/app.py` traduz conflito de índice de vigente em HTTP 409; testes de integração em `backend/tests/integration/test_api_revisao_divergencias.py`.
+
+**Correções de verificação e regressões (iterações 1–4)**:
+- G1–G9 (r2): exclusão automática da nova principal dentre as secundárias; preservação de troca de aba durante veredito pendente; recarga de detalhe/fila em 409; reinício do formulário ao trocar de Taxonomia; alinhamento da versão do `katex`; remoção de `PlaceholderSectionPage.tsx` e ajustes de acessibilidade/glossário.
+- K1–K5 (r3): preservação do formulário em 409/422; limpeza de `editandoId` ao trocar questão/Taxonomia; remoção de exports sem uso em `api/revisao.ts`; extração de `buscarProximaPagina` e limpeza de `id` órfão.
+- L1–L4 (r4): fixação imediata de `questao=<idAtual>` em erro de veredito (inclusive sob `v7_startTransition`) mantendo questão, erro, formulário e navegação coerente (`Fora da fila · N na fila` com `Próxima` levando ao primeiro item); instância única de `FormularioClassificacao` com key estável para criação (`!vigente`) e edição (`editando`), preservando digitação em refetch/409; atalhos ignorando `evento.repeat`; guarda síncrona via `useRef` contra duplo veredito no mesmo tick; remoção de `export` sem uso de `ResolverDivergenciaResponse` e reuso de `idsDaFila(fila.data)`.
+
+**Verificação executada**:
+- `frontend/`: `pnpm type-check`, `pnpm lint`, `pnpm build` (exit 0) e `pnpm test` (exit 0 — 13 arquivos, 146 testes passando, incluindo 35 em `RevisaoPage.test.tsx`, 6 em `MarkdownContent.test.tsx`, 8 em `revisaoUrl.test.ts`, 2 em `questaoMarkdown.test.ts` e 1 em `PainelVeredito.test.tsx`).
+- Raiz: `make lint` (exit 0).
+- `backend/`: `uv run pytest` (exit 0 — 311 passed).
+
+**Pendências registradas**:
+- Validação manual no navegador contra o backend real (incluindo `Esc` com lightbox + edição abertos) fica para a Tarefa 15.
+- Aba `Divergências` usa `ordenacao=consulta` porque a API atual não ordena por execução mais recente.
+- `questao=<id>` fora do recorte ainda é exibida; setas descartam edição sem confirmação quando o foco está fora do formulário; imagens Markdown remotas dependem de política futura se necessário.
