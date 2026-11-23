@@ -228,6 +228,7 @@ def _serializar_item(item: ItemConsultaQuestao) -> ItemQuestaoResponse:
         revisao_prioritaria=item.revisao_prioritaria,
         tem_divergencia_aberta=item.tem_divergencia_aberta,
         usa_disciplina_arquivada=item.usa_disciplina_arquivada,
+        possui_ativos_visuais=bool(questao.ativos_visuais),
         classificacao=(
             ClassificacaoResumoResponse(
                 id=c.id,

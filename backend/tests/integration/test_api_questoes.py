@@ -325,6 +325,23 @@ def test_fila_revisao_ordem_exata_e_prioridade_efetiva(
         assert {i["id"] for i in nao_prioritarias["itens"]} == {str(qd.id), str(qe.id), str(qf.id)}
 
 
+def test_listagem_expoe_possui_ativos_visuais(
+    db_teste_url: str, session_factory_teste: sessionmaker[Session], tmp_path: Path
+) -> None:
+    cen = _montar_cenario(session_factory_teste)
+    q2 = cen.repos.questoes.buscar_por_id(cen.q2.id)
+    assert q2 is not None
+    q2.ativos_visuais = [AtivoVisual(origem=OrigemAtivoVisual.PICTURE_DOCLING, ordem=0, pagina=1)]
+    cen.repos.questoes.salvar(q2)
+
+    with TestClient(criar_app(db_teste_url, tmp_path)) as client:
+        corpo = client.get("/api/v1/questoes").json()
+    por_id = {i["id"]: i["possui_ativos_visuais"] for i in corpo["itens"]}
+    assert por_id[str(cen.q2.id)] is True
+    assert por_id[str(cen.q1.id)] is False
+    assert sum(por_id.values()) == 1
+
+
 def test_detalhe_questao_completo_e_erros(
     db_teste_url: str, session_factory_teste: sessionmaker[Session], tmp_path: Path
 ) -> None:

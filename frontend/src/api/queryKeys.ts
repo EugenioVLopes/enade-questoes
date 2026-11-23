@@ -1,3 +1,5 @@
+import type { ListarQuestoesParams } from "@/api/questoes";
+
 export const queryKeys = {
   health: {
     all: ["health"] as const,
@@ -15,6 +17,7 @@ export const queryKeys = {
   },
   questoes: {
     all: ["questoes"] as const,
+    list: (params: ListarQuestoesParams) => ["questoes", "list", params] as const,
     contadores: (taxonomiaId?: string | null) =>
       ["questoes", "contadores", taxonomiaId ?? null] as const,
   },

@@ -5,6 +5,7 @@ import { PlaceholderSectionPage } from "@/components/layout/PlaceholderSectionPa
 import { RootIndexRedirect } from "@/components/layout/RootIndexRedirect";
 import { TaxonomiaProvider } from "@/components/layout/TaxonomiaContext";
 import { ProvasPage } from "@/features/provas/ProvasPage";
+import { QuestoesPage } from "@/features/questoes/QuestoesPage";
 import { TaxonomiasPage } from "@/features/taxonomias/TaxonomiasPage";
 
 export const ROUTER_FUTURE_FLAGS: {
@@ -37,7 +38,7 @@ export function createAppRoutes(): RouteObject[] {
         },
         {
           path: "questoes",
-          element: <PlaceholderSectionPage section="questoes" />,
+          element: <QuestoesPage />,
         },
         {
           path: "revisao",

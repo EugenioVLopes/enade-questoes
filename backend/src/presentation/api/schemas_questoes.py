@@ -166,6 +166,7 @@ class ItemQuestaoResponse(BaseModel):
     revisao_prioritaria: bool
     tem_divergencia_aberta: bool
     usa_disciplina_arquivada: bool
+    possui_ativos_visuais: bool
     classificacao: ClassificacaoResumoResponse | None = None
 
 

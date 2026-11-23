@@ -1074,6 +1074,8 @@ export interface components {
             tem_divergencia_aberta: boolean;
             /** Usa Disciplina Arquivada */
             usa_disciplina_arquivada: boolean;
+            /** Possui Ativos Visuais */
+            possui_ativos_visuais: boolean;
             classificacao?: components["schemas"]["ClassificacaoResumoResponse"] | null;
         };
         /**
