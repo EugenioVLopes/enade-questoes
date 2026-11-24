@@ -15,12 +15,17 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['"Onest"', "system-ui", "-apple-system", "sans-serif"],
+        mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "monospace"],
+      },
       colors: {
         border: token("border"),
         input: token("input"),
         ring: token("ring"),
         background: token("background"),
         foreground: token("foreground"),
+        surface: token("surface"),
         primary: {
           DEFAULT: token("primary"),
           foreground: token("primary-foreground"),

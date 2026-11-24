@@ -60,50 +60,50 @@ const COMPONENTES: Components = {
   table: (props: Props<"table">) => {
     const { className, ...resto } = semNode(props);
     return (
-      <div className="my-3 overflow-x-auto">
+      <div className="my-4 overflow-x-auto rounded-md border border-border">
         <table className={cn("w-full border-collapse text-sm", className)} {...resto} />
       </div>
     );
   },
   th: (props: Props<"th">) => {
     const { className, ...resto } = semNode(props);
-    return <th className={cn("border bg-muted px-3 py-1.5 text-left font-semibold", className)} {...resto} />;
+    return <th className={cn("border-b border-r last:border-r-0 bg-surface px-3 py-2 text-left text-xs font-semibold text-foreground", className)} {...resto} />;
   },
   td: (props: Props<"td">) => {
     const { className, ...resto } = semNode(props);
-    return <td className={cn("border px-3 py-1.5 align-top", className)} {...resto} />;
+    return <td className={cn("border-b border-r last:border-r-0 px-3 py-2 align-top text-foreground", className)} {...resto} />;
   },
   pre: (props: Props<"pre">) => {
     const { className, ...resto } = semNode(props);
     return (
       <pre
-        className={cn("my-3 overflow-x-auto rounded-md border bg-muted p-3 font-mono text-xs leading-relaxed", className)}
+        className={cn("my-4 overflow-x-auto rounded-md border border-border bg-surface/80 p-3.5 font-mono text-[13px] leading-relaxed", className)}
         {...resto}
       />
     );
   },
   code: (props: Props<"code">) => {
     const { className, ...resto } = semNode(props);
-    return <code className={cn("font-mono", className)} {...resto} />;
+    return <code className={cn("font-mono text-[0.9em]", className)} {...resto} />;
   },
   a: (props: Props<"a">) => (
-    <a className="text-primary underline underline-offset-2" target="_blank" rel="noopener noreferrer" {...semNode(props)} />
+    <a className="text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary" target="_blank" rel="noopener noreferrer" {...semNode(props)} />
   ),
   ul: (props: Props<"ul">) => {
     const { className, ...resto } = semNode(props);
-    return <ul className={cn("my-2 list-disc space-y-1 pl-6", className)} {...resto} />;
+    return <ul className={cn("my-2.5 list-disc space-y-1.5 pl-6", className)} {...resto} />;
   },
   ol: (props: Props<"ol">) => {
     const { className, ...resto } = semNode(props);
-    return <ol className={cn("my-2 list-decimal space-y-1 pl-6", className)} {...resto} />;
+    return <ol className={cn("my-2.5 list-decimal space-y-1.5 pl-6", className)} {...resto} />;
   },
   p: (props: Props<"p">) => {
     const { className, ...resto } = semNode(props);
-    return <p className={cn("my-2 leading-relaxed", className)} {...resto} />;
+    return <p className={cn("my-2.5 leading-[1.7] first:mt-0 last:mb-0", className)} {...resto} />;
   },
   blockquote: (props: Props<"blockquote">) => {
     const { className, ...resto } = semNode(props);
-    return <blockquote className={cn("my-2 border-l-4 pl-3 text-muted-foreground", className)} {...resto} />;
+    return <blockquote className={cn("my-3 border-l-2 border-primary/50 bg-surface/50 py-1.5 pl-3.5 pr-3 text-muted-foreground", className)} {...resto} />;
   },
 };
 
@@ -114,7 +114,7 @@ export interface MarkdownContentProps {
 
 export function MarkdownContent({ source, className }: MarkdownContentProps) {
   return (
-    <div className={cn("markdown-content break-words text-sm", className)}>
+    <div className={cn("markdown-content break-words text-[15px] leading-[1.7] text-foreground", className)}>
       <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS} components={COMPONENTES}>
         {source}
       </ReactMarkdown>

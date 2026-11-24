@@ -4,33 +4,58 @@
 
 @layer base {
   :root {
-    --radius: 0.625rem;
-    --background: 0.985 0.002 247;
-    --foreground: 0.22 0.04 260;
+    /* Dealt direction: teal-on-paper + Onest + JetBrains Mono + sharp radius */
+    --radius: 0.375rem;
+    --background: 0.98 0.004 165;
+    --surface: 0.95 0.008 175;
+    --foreground: 0.235 0.032 206;
     --card: 1 0 0;
-    --card-foreground: 0.22 0.04 260;
+    --card-foreground: 0.235 0.032 206;
     --popover: 1 0 0;
-    --popover-foreground: 0.22 0.04 260;
-    --primary: 0.48 0.17 255;
-    --primary-foreground: 0.99 0.003 247;
-    --secondary: 0.96 0.01 250;
-    --secondary-foreground: 0.28 0.04 260;
-    --muted: 0.96 0.006 250;
-    --muted-foreground: 0.45 0.03 258;
-    --accent: 0.95 0.03 255;
-    --accent-foreground: 0.35 0.15 255;
-    --destructive: 0.62 0.22 25;
-    --destructive-foreground: 0.99 0.003 247;
-    --border: 0.91 0.01 255;
-    --input: 0.91 0.01 255;
-    --ring: 0.48 0.17 255;
+    --popover-foreground: 0.235 0.032 206;
+    --primary: 0.405 0.075 206;
+    --primary-foreground: 0.985 0.003 165;
+    --secondary: 0.945 0.01 178;
+    --secondary-foreground: 0.28 0.045 206;
+    --muted: 0.948 0.008 175;
+    --muted-foreground: 0.455 0.032 204;
+    --accent: 0.928 0.022 192;
+    --accent-foreground: 0.35 0.072 206;
+    --destructive: 0.51 0.19 25;
+    --destructive-foreground: 0.985 0.003 165;
+    --border: 0.892 0.012 182;
+    --input: 0.84 0.015 184;
+    --ring: 0.405 0.075 206;
   }
 
   * {
     @apply border-border;
   }
 
+  html {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@layer components {
+  .kbd-cap {
+    @apply inline-flex min-w-[1.35rem] items-center justify-center rounded-sm border border-border bg-background px-1.5 py-0.5 font-mono text-[11px] font-medium leading-none text-foreground shadow-[0_1px_0_0_oklch(var(--border))];
+  }
+
+  .editorial-sheet {
+    @apply rounded-lg border bg-card;
+  }
+
+  .markdown-content .katex-display {
+    @apply my-3 overflow-x-auto py-1;
+  }
+
+  .markdown-content pre code.hljs {
+    @apply bg-transparent p-0;
   }
 }
