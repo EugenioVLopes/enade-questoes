@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, FileText, Pencil } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 
+import { useResolverAlertaExtracaoMutation } from "@/api/edicaoQuestao";
 import { useCriarExecucaoMutation } from "@/api/execucoes";
 import { getErrorMessage } from "@/api/errors";
 import { queryKeys } from "@/api/queryKeys";
@@ -24,6 +25,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { BannerReclassificacao } from "@/features/revisao/edicao/BannerReclassificacao";
+import { EditorConteudoQuestao } from "@/features/revisao/edicao/EditorConteudoQuestao";
+import { VisualizadorPdfPagina } from "@/features/revisao/edicao/VisualizadorPdfPagina";
 import { PainelVeredito } from "@/features/revisao/PainelVeredito";
 import { QuestaoLeitura } from "@/features/revisao/QuestaoLeitura";
 import { useAtalhosRevisao } from "@/features/revisao/useAtalhosRevisao";
@@ -57,7 +61,7 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
   const urlAtualRef = useRef(searchParams);
   useEffect(() => {
     urlAtualRef.current = searchParams;
-  });
+  }, [searchParams]);
 
   const estado = useMemo(() => parseRevisaoUrl(searchParams), [searchParams]);
   const modo: ModoRevisao = useMemo(() => {
@@ -84,6 +88,12 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
   const contadores = fila.data?.pages[0]?.contadores ?? null;
 
   const [questaoFixada, setQuestaoFixada] = useState<{ id: string; searchAntes: string } | null>(null);
+  useEffect(() => {
+    if (questaoFixada && questaoFixada.searchAntes !== searchParams.toString()) {
+      setQuestaoFixada(null);
+    }
+  }, [questaoFixada, searchParams]);
+
   const selecionadaId =
     estado.questaoId ??
     (questaoFixada && questaoFixada.searchAntes === searchParams.toString() ? questaoFixada.id : null) ??
@@ -101,25 +111,43 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
   const detalhe = useQuestaoDetalheQuery(selecionadaId, activeTaxonomiaId);
   const questao = detalhe.data;
 
-  const perfisQuery = usePerfisClassificacaoQuery({ enabled: Boolean(questao) && !questao?.classificacao_vigente });
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [editandoConteudoId, setEditandoConteudoId] = useState<string | null>(null);
+  const [pdfAberto, setPdfAberto] = useState(false);
+  const [revisoesAtivos, setRevisoesAtivos] = useState<Record<string, number>>({});
+  const [bannerReclassificarId, setBannerReclassificarId] = useState<string | null>(null);
+  const [reclassificacaoCriada, setReclassificacaoCriada] = useState<{ id: string; execucaoId: string } | null>(null);
+  const [reclassificacaoErro, setReclassificacaoErro] = useState<{ id: string; mensagem: string } | null>(null);
+  const [verificandoAlertaId, setVerificandoAlertaId] = useState<string | null>(null);
+  const [erroAlerta, setErroAlerta] = useState<{ id: string; mensagem: string } | null>(null);
+  const [erroVeredito, setErroVeredito] = useState<{ id: string; mensagem: string } | null>(null);
+  const [execucaoCriada, setExecucaoCriada] = useState<{ id: string; execucaoId: string } | null>(null);
+  const [execucaoErro, setExecucaoErro] = useState<{ id: string; mensagem: string } | null>(null);
+  const [lightboxAberto, setLightboxAberto] = useState(false);
+  const editando = selecionadaId !== null && editandoId === selecionadaId;
+  const editandoConteudo = selecionadaId !== null && editandoConteudoId === selecionadaId;
+  const bannerReclassificarAtivo = selecionadaId !== null && bannerReclassificarId === selecionadaId;
+
+  useEffect(() => {
+    setEditandoId(null);
+    setEditandoConteudoId(null);
+    setPdfAberto(false);
+    setBannerReclassificarId(null);
+    setErroAlerta(null);
+  }, [selecionadaId, activeTaxonomiaId]);
+
+  const perfisQuery = usePerfisClassificacaoQuery({
+    enabled: Boolean(questao) && (!questao?.classificacao_vigente || editandoConteudo || bannerReclassificarAtivo),
+  });
   const perfilPadrao = perfisQuery.data ? findDefaultPerfil(perfisQuery.data.itens) : undefined;
 
   const aprovar = useAprovarClassificacaoMutation();
   const corrigir = useCorrigirClassificacaoMutation();
   const resolver = useResolverDivergenciaMutation();
   const criarExecucao = useCriarExecucaoMutation();
+  const resolverAlerta = useResolverAlertaExtracaoMutation();
   const ocupado = aprovar.isPending || corrigir.isPending || resolver.isPending;
   const vereditoEmAndamentoRef = useRef(false);
-
-  const [editandoId, setEditandoId] = useState<string | null>(null);
-  const [erroVeredito, setErroVeredito] = useState<{ id: string; mensagem: string } | null>(null);
-  const [execucaoCriada, setExecucaoCriada] = useState<{ id: string; execucaoId: string } | null>(null);
-  const [execucaoErro, setExecucaoErro] = useState<{ id: string; mensagem: string } | null>(null);
-  const [lightboxAberto, setLightboxAberto] = useState(false);
-  const editando = selecionadaId !== null && editandoId === selecionadaId;
-  useEffect(() => {
-    setEditandoId(null);
-  }, [selecionadaId, activeTaxonomiaId]);
 
   const foraDaFila = indice < 0 && Boolean(fila.data) && !fila.hasNextPage && !fila.isFetchingNextPage;
   const podeIrProxima =
@@ -129,6 +157,13 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
     const proxima = comQuestao(urlAtualRef.current, id);
     urlAtualRef.current = proxima;
     setSearchParams(proxima, { replace: true });
+  }
+
+  function fixarQuestao(id: string) {
+    if (parseRevisaoUrl(urlAtualRef.current).questaoId !== id) {
+      setQuestaoFixada({ id, searchAntes: urlAtualRef.current.toString() });
+      irPara(id);
+    }
   }
 
   async function buscarProximaPagina(): Promise<string[]> {
@@ -202,12 +237,8 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
         if (opcoes?.manterEdicaoNoErro) {
           setEditandoId(idAtual);
         }
-        if (
-          assinaturaDaUrl(urlAtualRef.current) === assinaturaAntes &&
-          parseRevisaoUrl(urlAtualRef.current).questaoId !== idAtual
-        ) {
-          setQuestaoFixada({ id: idAtual, searchAntes: urlAtualRef.current.toString() });
-          irPara(idAtual);
+        if (assinaturaDaUrl(urlAtualRef.current) === assinaturaAntes) {
+          fixarQuestao(idAtual);
         }
         void queryClient.invalidateQueries({ queryKey: queryKeys.questoes.all });
         return;
@@ -265,10 +296,75 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
     }
   }
 
+  async function handleVerificarAlerta(alertaId: string) {
+    if (!questao || !activeTaxonomiaId) return;
+    const id = questao.id;
+    fixarQuestao(id);
+    setErroAlerta(null);
+    setVerificandoAlertaId(alertaId);
+    try {
+      await resolverAlerta.mutateAsync({
+        questaoId: id,
+        alertaId,
+        taxonomiaId: activeTaxonomiaId,
+      });
+    } catch (error) {
+      setErroAlerta({ id, mensagem: getErrorMessage(error) });
+    } finally {
+      setVerificandoAlertaId(null);
+    }
+  }
+
+  async function handleReclassificarQuestao() {
+    if (!questao || !activeTaxonomiaId || !perfilPadrao) return;
+    const id = questao.id;
+    setReclassificacaoErro(null);
+    try {
+      const aceita = await criarExecucao.mutateAsync({
+        taxonomia_id: activeTaxonomiaId,
+        perfil_id: perfilPadrao.id,
+        escopo: "questao_ids",
+        questao_ids: [id],
+        incluir_revisadas: true,
+      });
+      setReclassificacaoCriada({ id, execucaoId: aceita.execucao_id });
+    } catch (error) {
+      setReclassificacaoErro({ id, mensagem: getErrorMessage(error) });
+    }
+  }
+
+  function sinalizarAlteracaoConteudo(questaoId: string) {
+    setBannerReclassificarId(questaoId);
+    setReclassificacaoCriada((prev) => (prev?.id === questaoId ? null : prev));
+    setReclassificacaoErro((prev) => (prev?.id === questaoId ? null : prev));
+  }
+
+  function abrirEdicaoConteudo(id: string) {
+    fixarQuestao(id);
+    setEditandoConteudoId(id);
+  }
+
+  function handleMidiaAlterada(opcoes?: { ativoSubstituidoId?: string }) {
+    if (opcoes?.ativoSubstituidoId) {
+      const ativoId = opcoes.ativoSubstituidoId;
+      setRevisoesAtivos((prev) => ({ ...prev, [ativoId]: (prev[ativoId] ?? 0) + 1 }));
+    }
+    if (questao) {
+      fixarQuestao(questao.id);
+      sinalizarAlteracaoConteudo(questao.id);
+    }
+  }
+
+  function handleSalvarConteudoSucesso(atualizada: DetalheQuestaoResponse) {
+    fixarQuestao(atualizada.id);
+    setEditandoConteudoId(null);
+    sinalizarAlteracaoConteudo(atualizada.id);
+  }
+
   const podeAprovar =
     questao?.classificacao_vigente?.status === "pendente_revisao" && !questao.divergencia_aberta && !editando && !ocupado;
   useAtalhosRevisao({
-    bloqueado: lightboxAberto,
+    bloqueado: lightboxAberto || pdfAberto || editandoConteudo,
     aprovar: podeAprovar ? handleAprovar : undefined,
     editar:
       questao?.classificacao_vigente && !editando && !ocupado
@@ -411,44 +507,109 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
         ) : !questao || !activeTaxonomia ? (
           <Skeleton className="h-64 w-full rounded-lg" role="status" aria-label="Carregando Questão" />
         ) : (
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(340px,1fr)]">
-            <div
-              className="min-w-0 lg:max-h-[calc(100vh-11rem)] lg:overflow-y-auto lg:pr-1"
-              data-testid="coluna-leitura"
-            >
-              <QuestaoLeitura
-                questao={questao}
-                acoesExtras={renderAcoesQuestao?.(questao)}
-                onLightboxChange={setLightboxAberto}
-              />
-            </div>
-            <aside
-              className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-11rem)] lg:self-start lg:overflow-y-auto"
-              aria-label="Veredito"
-              data-testid="coluna-veredito"
-            >
-              <PainelVeredito
-                key={questao.id}
-                questao={questao}
-                taxonomia={activeTaxonomia}
-                nomes={nomes}
-                editando={editando}
-                onEditandoChange={(valor) => setEditandoId(valor ? questao.id : null)}
-                ocupado={ocupado}
-                erro={erro}
-                onAprovar={handleAprovar}
-                onCorrigir={handleCorrigir}
-                onResolver={handleResolver}
-                onExecutarClassificacao={() => void handleExecutarClassificacao()}
-                execucao={{
-                  enviando: criarExecucao.isPending,
-                  erro: execucaoErro?.id === questao.id ? execucaoErro.mensagem : null,
-                  criadaId: execucaoCriada?.id === questao.id ? execucaoCriada.execucaoId : null,
-                  semPerfil: perfisQuery.isSuccess && !perfilPadrao,
-                }}
-              />
-            </aside>
-          </div>
+          (() => {
+            const acoesPadraoQuestao = (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={questao.paginas.length === 0}
+                  title={questao.paginas.length === 0 ? "Questão sem página de PDF registrada." : undefined}
+                  onClick={() => setPdfAberto(true)}
+                >
+                  <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                  Ver página original do PDF
+                </Button>
+                {!editandoConteudo ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => abrirEdicaoConteudo(questao.id)}
+                  >
+                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                    Editar conteúdo
+                  </Button>
+                ) : null}
+              </>
+            );
+            const acoesQuestao = renderAcoesQuestao ? renderAcoesQuestao(questao) : acoesPadraoQuestao;
+
+            return (
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(340px,1fr)]">
+                <div
+                  className="min-w-0 lg:max-h-[calc(100vh-11rem)] lg:overflow-y-auto lg:pr-1"
+                  data-testid="coluna-leitura"
+                >
+                  <div className="space-y-4">
+                    {bannerReclassificarAtivo ? (
+                      <BannerReclassificacao
+                        enviando={criarExecucao.isPending}
+                        erro={reclassificacaoErro?.id === questao.id ? reclassificacaoErro.mensagem : null}
+                        criadaId={reclassificacaoCriada?.id === questao.id ? reclassificacaoCriada.execucaoId : null}
+                        semPerfil={perfisQuery.isSuccess && !perfilPadrao}
+                        onReclassificar={() => void handleReclassificarQuestao()}
+                        onDispensar={() => setBannerReclassificarId(null)}
+                      />
+                    ) : null}
+                    {editandoConteudo ? (
+                      <EditorConteudoQuestao
+                        key={questao.id}
+                        questao={questao}
+                        taxonomiaId={activeTaxonomiaId}
+                        acoesExtras={acoesQuestao}
+                        revisoesAtivos={revisoesAtivos}
+                        onVerificarAlerta={(alertaId) => void handleVerificarAlerta(alertaId)}
+                        verificandoAlertaId={verificandoAlertaId}
+                        erroAlerta={erroAlerta?.id === questao.id ? erroAlerta.mensagem : null}
+                        onSalvarSucesso={handleSalvarConteudoSucesso}
+                        onMidiaAlterada={handleMidiaAlterada}
+                        onCancelar={() => setEditandoConteudoId(null)}
+                        onRecarregarQuestao={async () => (await detalhe.refetch()).data}
+                      />
+                    ) : (
+                      <QuestaoLeitura
+                        questao={questao}
+                        acoesExtras={acoesQuestao}
+                        onLightboxChange={setLightboxAberto}
+                        revisoesAtivos={revisoesAtivos}
+                        onVerificarAlerta={(alertaId) => void handleVerificarAlerta(alertaId)}
+                        verificandoAlertaId={verificandoAlertaId}
+                        erroAlerta={erroAlerta?.id === questao.id ? erroAlerta.mensagem : null}
+                      />
+                    )}
+                  </div>
+                </div>
+                <aside
+                  className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-11rem)] lg:self-start lg:overflow-y-auto"
+                  aria-label="Veredito"
+                  data-testid="coluna-veredito"
+                >
+                  <PainelVeredito
+                    key={questao.id}
+                    questao={questao}
+                    taxonomia={activeTaxonomia}
+                    nomes={nomes}
+                    editando={editando}
+                    onEditandoChange={(valor) => setEditandoId(valor ? questao.id : null)}
+                    ocupado={ocupado}
+                    erro={erro}
+                    onAprovar={handleAprovar}
+                    onCorrigir={handleCorrigir}
+                    onResolver={handleResolver}
+                    onExecutarClassificacao={() => void handleExecutarClassificacao()}
+                    execucao={{
+                      enviando: criarExecucao.isPending,
+                      erro: execucaoErro?.id === questao.id ? execucaoErro.mensagem : null,
+                      criadaId: execucaoCriada?.id === questao.id ? execucaoCriada.execucaoId : null,
+                      semPerfil: perfisQuery.isSuccess && !perfilPadrao,
+                    }}
+                  />
+                </aside>
+              </div>
+            );
+          })()
         )}
       </div>
     );
@@ -507,6 +668,16 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
       >
         {conteudo}
       </div>
+
+      {questao ? (
+        <VisualizadorPdfPagina
+          open={pdfAberto}
+          onOpenChange={setPdfAberto}
+          prova={questao.prova}
+          numeroQuestao={questao.numero}
+          paginas={questao.paginas}
+        />
+      ) : null}
     </section>
   );
 }

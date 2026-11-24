@@ -1,58 +1,34 @@
 import { useState, type ReactNode } from "react";
-import { AlertTriangle, Check, ClipboardCopy, Info } from "lucide-react";
+import { Check, ClipboardCopy } from "lucide-react";
 
-import type { AlertaExtracaoResponse, DetalheQuestaoResponse } from "@/api/revisao";
+import type { DetalheQuestaoResponse } from "@/api/revisao";
 import { MarkdownContent } from "@/components/markdown/MarkdownContent";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BadgesAlertaExtracao } from "@/features/revisao/edicao/BadgesAlertaExtracao";
 import { GaleriaAtivos } from "@/features/revisao/GaleriaAtivos";
 import { montarQuestaoMarkdown, rotuloGabarito } from "@/features/revisao/questaoMarkdown";
-
-const ROTULOS_ALERTA: Record<AlertaExtracaoResponse["codigo"], string> = {
-  formula_nao_decodificada: "Fórmula não decodificada",
-  alternativas_incompletas: "Alternativas incompletas",
-  pdf_via_ocr: "PDF lido via OCR",
-  enunciado_suspeito: "Enunciado suspeito",
-  fonte_symbol_detectada: "Fonte Symbol detectada",
-  gabarito_ausente_na_prova: "Gabarito ausente na Prova",
-};
 
 export interface QuestaoLeituraProps {
   questao: DetalheQuestaoResponse;
   acoesExtras?: ReactNode;
   onLightboxChange?: (aberto: boolean) => void;
+  revisoesAtivos?: Readonly<Record<string, number>>;
+  onVerificarAlerta?: (alertaId: string) => void;
+  verificandoAlertaId?: string | null;
+  erroAlerta?: string | null;
 }
 
-function BadgesAlerta({ alertas }: { alertas: readonly AlertaExtracaoResponse[] }) {
-  const abertos = alertas.filter((alerta) => alerta.status === "aberto");
-  if (abertos.length === 0) {
-    return null;
-  }
-  return (
-    <ul className="flex flex-wrap gap-1.5" aria-label="Alertas de Extração">
-      {abertos.map((alerta) => {
-        const critico = alerta.severidade === "critico";
-        return (
-          <li key={alerta.id}>
-            <Badge
-              variant={critico ? "destructive" : "outline"}
-              className="gap-1"
-              title={alerta.mensagem}
-              data-severidade={alerta.severidade}
-            >
-              {critico ? <AlertTriangle className="h-3 w-3" aria-hidden="true" /> : <Info className="h-3 w-3" aria-hidden="true" />}
-              <span className="sr-only">{critico ? "Alerta crítico: " : "Alerta informativo: "}</span>
-              {ROTULOS_ALERTA[alerta.codigo] ?? alerta.codigo}
-            </Badge>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-export function QuestaoLeitura({ questao, acoesExtras, onLightboxChange }: QuestaoLeituraProps) {
+export function QuestaoLeitura({
+  questao,
+  acoesExtras,
+  onLightboxChange,
+  revisoesAtivos,
+  onVerificarAlerta,
+  verificandoAlertaId,
+  erroAlerta,
+}: QuestaoLeituraProps) {
   const [copiada, setCopiada] = useState<"ok" | "erro" | null>(null);
   const ativosEnunciado = questao.ativos_visuais.filter((ativo) => !ativo.alternativa_letra);
   const correta = questao.gabarito.situacao_gabarito === "valida" ? questao.gabarito.alternativa_correta : null;
@@ -99,7 +75,12 @@ export function QuestaoLeitura({ questao, acoesExtras, onLightboxChange }: Quest
           </Badge>
           {questao.editada_manualmente ? <Badge variant="secondary">Editada manualmente</Badge> : null}
         </div>
-        <BadgesAlerta alertas={questao.alertas_extracao} />
+        <BadgesAlertaExtracao
+          alertas={questao.alertas_extracao}
+          onVerificarAlerta={onVerificarAlerta}
+          verificandoAlertaId={verificandoAlertaId}
+          erroAlerta={erroAlerta}
+        />
         <p className="text-xs text-muted-foreground empty:hidden" role="status" aria-live="polite">
           {copiada === "ok"
             ? "Questão copiada em Markdown."
@@ -112,7 +93,12 @@ export function QuestaoLeitura({ questao, acoesExtras, onLightboxChange }: Quest
       <div className="space-y-6 px-5 py-5 sm:px-6 sm:py-6">
         <section aria-label="Enunciado" className="max-w-[68ch] space-y-4">
           <MarkdownContent source={questao.enunciado} />
-          <GaleriaAtivos ativos={ativosEnunciado} rotulo="Ativo Visual do enunciado" onAbertoChange={onLightboxChange} />
+          <GaleriaAtivos
+            ativos={ativosEnunciado}
+            rotulo="Ativo Visual do enunciado"
+            revisoesAtivos={revisoesAtivos}
+            onAbertoChange={onLightboxChange}
+          />
         </section>
 
         {questao.alternativas.length > 0 ? (
@@ -148,6 +134,7 @@ export function QuestaoLeitura({ questao, acoesExtras, onLightboxChange }: Quest
                       <GaleriaAtivos
                         ativos={ativos}
                         rotulo={`Ativo Visual da alternativa ${alternativa.letra}`}
+                        revisoesAtivos={revisoesAtivos}
                         onAbertoChange={onLightboxChange}
                       />
                       {ehCorreta ? <span className="sr-only">Alternativa correta</span> : null}

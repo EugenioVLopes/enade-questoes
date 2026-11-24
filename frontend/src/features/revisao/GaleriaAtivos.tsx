@@ -2,14 +2,21 @@ import { useState } from "react";
 
 import type { AtivoVisualResponse } from "@/api/revisao";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { urlAtivoComRevisao } from "@/features/revisao/edicao/editorUtils";
 
 export interface GaleriaAtivosProps {
   ativos: readonly AtivoVisualResponse[];
   rotulo: string;
+  revisoesAtivos?: Readonly<Record<string, number>>;
   onAbertoChange?: (aberto: boolean) => void;
 }
 
-export function GaleriaAtivos({ ativos, rotulo, onAbertoChange }: GaleriaAtivosProps) {
+export function GaleriaAtivos({
+  ativos,
+  rotulo,
+  revisoesAtivos,
+  onAbertoChange,
+}: GaleriaAtivosProps) {
   const [aberto, setAberto] = useState<AtivoVisualResponse | null>(null);
 
   if (ativos.length === 0) {
@@ -33,7 +40,7 @@ export function GaleriaAtivos({ ativos, rotulo, onAbertoChange }: GaleriaAtivosP
               onClick={() => alterar(ativo)}
             >
               <img
-                src={ativo.url_arquivo}
+                src={urlAtivoComRevisao(ativo.url_arquivo, revisoesAtivos?.[ativo.id])}
                 alt={`${rotulo} ${indice + 1}`}
                 className="max-h-60 max-w-full object-contain transition-transform duration-200 group-hover:scale-[1.02] sm:max-w-sm"
               />
@@ -46,7 +53,11 @@ export function GaleriaAtivos({ ativos, rotulo, onAbertoChange }: GaleriaAtivosP
           <DialogTitle>{rotulo}</DialogTitle>
           <DialogDescription className="sr-only">Imagem ampliada. Pressione Esc para fechar.</DialogDescription>
           {aberto ? (
-            <img src={aberto.url_arquivo} alt={`${rotulo} ampliado`} className="max-h-[75vh] w-full object-contain" />
+            <img
+              src={urlAtivoComRevisao(aberto.url_arquivo, revisoesAtivos?.[aberto.id])}
+              alt={`${rotulo} ampliado`}
+              className="max-h-[75vh] w-full object-contain"
+            />
           ) : null}
         </DialogContent>
       </Dialog>
