@@ -28,20 +28,20 @@ export function OutrasTaxonomiasHistorico({ outrasTaxonomias, historico, nomes }
   const [aberto, setAberto] = useState(false);
   const rotulo = `Outras taxonomias (${outrasTaxonomias.length}) e histórico`;
   return (
-    <section className="rounded-md border">
+    <section className="overflow-hidden rounded-md border border-border bg-surface/35">
       <h3>
         <button
           type="button"
-          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium"
+          className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-xs font-semibold text-foreground transition-colors hover:bg-surface/70"
           aria-expanded={aberto}
           onClick={() => setAberto(!aberto)}
         >
-          {aberto ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
+          {aberto ? <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
           {rotulo}
         </button>
       </h3>
       {aberto ? (
-        <div className="space-y-4 border-t p-3">
+        <div className="space-y-4 border-t border-border bg-card p-3.5">
           <div className="space-y-2">
             <h4 className="text-sm font-semibold">Outras Taxonomias</h4>
             {outrasTaxonomias.length === 0 ? (

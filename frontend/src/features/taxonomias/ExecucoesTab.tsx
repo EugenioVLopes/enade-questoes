@@ -1,5 +1,20 @@
 import { useState } from "react";
-import { AlertCircle, Loader2, Play, RotateCcw } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowDownLeft,
+  ArrowUpRight,
+  CheckCircle2,
+  Clock,
+  GitCompareArrows,
+  ListChecks,
+  Loader2,
+  Play,
+  RotateCcw,
+  XCircle,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 
 import {
   podeRetomarExecucao,
@@ -41,11 +56,49 @@ function formatarData(valor?: string | null): string {
   return Number.isNaN(data.getTime()) ? valor : data.toLocaleString("pt-BR");
 }
 
-function Metrica({ rotulo, valor }: { rotulo: string; valor: string | number }) {
+function StatusIcon({ status }: { status: string }) {
+  switch (status) {
+    case "concluida":
+      return <CheckCircle2 className="mr-1 h-3 w-3 shrink-0" aria-hidden="true" />;
+    case "concluida_com_erros":
+      return <AlertTriangle className="mr-1 h-3 w-3 shrink-0" aria-hidden="true" />;
+    case "erro":
+    case "interrompida":
+      return <XCircle className="mr-1 h-3 w-3 shrink-0" aria-hidden="true" />;
+    case "processando":
+      return <Loader2 className="mr-1 h-3 w-3 shrink-0 animate-spin" aria-hidden="true" />;
+    default:
+      return <Clock className="mr-1 h-3 w-3 shrink-0" aria-hidden="true" />;
+  }
+}
+
+function Metrica({
+  rotulo,
+  valor,
+  icon: Icon,
+  iconClassName,
+  valorClassName,
+}: {
+  rotulo: string;
+  valor: string | number;
+  icon: LucideIcon;
+  iconClassName?: string;
+  valorClassName?: string;
+}) {
   return (
-    <div className="rounded-md border p-3">
-      <p className="text-xs text-muted-foreground">{rotulo}</p>
-      <p className="mt-1 text-lg font-semibold tabular-nums">{valor}</p>
+    <div className="p-3">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Icon
+          className={`h-3.5 w-3.5 shrink-0 ${iconClassName ?? "text-muted-foreground/80"}`}
+          aria-hidden="true"
+        />
+        <p className="truncate text-[11px] font-medium">{rotulo}</p>
+      </div>
+      <p
+        className={`mt-1.5 font-mono text-base font-semibold tabular-nums ${valorClassName ?? "text-foreground"}`}
+      >
+        {valor}
+      </p>
     </div>
   );
 }
@@ -60,48 +113,83 @@ function ExecucaoCard({
   retomando: boolean;
 }) {
   const retomavel = podeRetomarExecucao(execucao.status);
+  const temErros = execucao.total_erros > 0;
+  const temDivergencias = execucao.divergencias_abertas > 0;
 
   return (
-    <Card data-testid={`execucao-card-${execucao.id}`}>
-      <CardHeader className="gap-2">
+    <Card data-testid={`execucao-card-${execucao.id}`} className="overflow-hidden">
+      <CardHeader className="gap-2 pb-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-lg">{formatarData(execucao.criada_em)}</CardTitle>
-            <CardDescription>
-              {execucao.snapshot_resumo.taxonomia.nome} · {execucao.snapshot_resumo.perfil.codigo}{" "}
-              {execucao.snapshot_resumo.perfil.versao} · {ESCOPO_ROTULO[execucao.escopo] ?? execucao.escopo}
+            <CardTitle className="flex items-center gap-2 font-mono text-base font-semibold">
+              <Clock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span>{formatarData(execucao.criada_em)}</span>
+            </CardTitle>
+            <CardDescription className="text-xs">
+              <span className="font-medium text-foreground/80">{execucao.snapshot_resumo.taxonomia.nome}</span> ·{" "}
+              <span className="font-mono">
+                {execucao.snapshot_resumo.perfil.codigo} {execucao.snapshot_resumo.perfil.versao}
+              </span>{" "}
+              · {ESCOPO_ROTULO[execucao.escopo] ?? execucao.escopo}
               {execucao.incluir_revisadas ? " · inclui revisadas" : ""}
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={execucao.status === "erro" ? "destructive" : "secondary"}>
-              {STATUS_ROTULO[execucao.status] ?? execucao.status}
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant={execucao.status === "erro" ? "destructive" : "secondary"}
+              className={
+                execucao.status === "concluida"
+                  ? "border-emerald-700/25 bg-emerald-50 text-emerald-800"
+                  : execucao.status === "concluida_com_erros"
+                    ? "border-amber-700/25 bg-amber-50 text-amber-900"
+                    : undefined
+              }
+            >
+              <StatusIcon status={execucao.status} />
+              <span>{STATUS_ROTULO[execucao.status] ?? execucao.status}</span>
             </Badge>
             <Button
               type="button"
               variant="outline"
+              size="sm"
               disabled={!retomavel || retomando}
               onClick={onRetomar}
               aria-label={`Retomar / Reprocessar falhas da execução ${execucao.id}`}
             >
               {retomando ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden="true" />
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
-                <RotateCcw className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                <RotateCcw className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
               )}
               Retomar / Reprocessar falhas
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <Metrica rotulo="Progresso" valor={`${execucao.processadas}/${execucao.total_itens}`} />
-          <Metrica rotulo="Erros" valor={execucao.total_erros} />
-          <Metrica rotulo="Divergências na rodada" valor={execucao.divergencias_abertas} />
-          <Metrica rotulo="Hits de cache" valor={execucao.cache_hits} />
-          <Metrica rotulo="Tokens de prompt" valor={execucao.prompt_tokens} />
-          <Metrica rotulo="Tokens de resposta" valor={execucao.completion_tokens} />
+      <CardContent className="pb-5">
+        <div className="grid grid-cols-2 divide-x divide-y divide-border rounded-md border border-border bg-surface/45 sm:grid-cols-3 lg:grid-cols-6 lg:divide-y-0">
+          <Metrica
+            rotulo="Progresso"
+            valor={`${execucao.processadas}/${execucao.total_itens}`}
+            icon={ListChecks}
+          />
+          <Metrica
+            rotulo="Erros"
+            valor={execucao.total_erros}
+            icon={AlertCircle}
+            iconClassName={temErros ? "text-destructive" : undefined}
+            valorClassName={temErros ? "text-destructive" : undefined}
+          />
+          <Metrica
+            rotulo="Divergências na rodada"
+            valor={execucao.divergencias_abertas}
+            icon={GitCompareArrows}
+            iconClassName={temDivergencias ? "text-amber-700" : undefined}
+            valorClassName={temDivergencias ? "text-amber-900" : undefined}
+          />
+          <Metrica rotulo="Hits de cache" valor={execucao.cache_hits} icon={Zap} />
+          <Metrica rotulo="Tokens de prompt" valor={execucao.prompt_tokens} icon={ArrowUpRight} />
+          <Metrica rotulo="Tokens de resposta" valor={execucao.completion_tokens} icon={ArrowDownLeft} />
         </div>
       </CardContent>
     </Card>

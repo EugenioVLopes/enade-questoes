@@ -123,9 +123,9 @@ export function QuestoesPage() {
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Questões</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.025em] text-foreground">Questões</h1>
           <p className="text-sm text-muted-foreground">
             Consulta textual e filtros sob a Taxonomia ativa
             {activeTaxonomia ? (
@@ -137,8 +137,11 @@ export function QuestoesPage() {
           </p>
         </div>
         {!semProvas && questoesQuery.data && !(dadoAnterior && total === 0) ? (
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground" data-testid="questoes-total">
+          <div className="flex flex-wrap items-center gap-3">
+            <span
+              className="rounded-sm border border-border bg-surface/70 px-2.5 py-1 font-mono text-xs font-medium text-muted-foreground tabular-nums"
+              data-testid="questoes-total"
+            >
               {`${total} questão(ões)`}
             </span>
             {total === 0 || dadoAnterior ? (
@@ -152,7 +155,7 @@ export function QuestoesPage() {
             )}
           </div>
         ) : null}
-      </div>
+      </header>
 
       {semProvas ? (
         <Card>

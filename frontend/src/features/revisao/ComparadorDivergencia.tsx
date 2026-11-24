@@ -86,41 +86,53 @@ export interface ComparadorDivergenciaProps {
 export function ComparadorDivergencia({ vigente, divergencia, nomes }: ComparadorDivergenciaProps) {
   const linhas = montarLinhas(vigente, divergencia, nomes);
   return (
-    <table className="w-full table-fixed border-collapse text-sm" aria-label="Comparador de Divergência">
-      <thead>
-        <tr className="text-left">
-          <th scope="col" className="w-1/4 p-1.5" />
-          <th scope="col" className="p-1.5">
-            Vigente humana
-            <span className="block text-xs font-normal text-muted-foreground">{vigente.origem === "humana" ? "Humana" : "IA"}</span>
-          </th>
-          <th scope="col" className="p-1.5">
-            Candidata IA
-            <span className="block text-xs font-normal text-muted-foreground">
-              Confiança {formatarConfianca(divergencia.confianca_candidata)}
-            </span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {linhas.map((linha) => {
-          const difere = diferente(linha, vigente, divergencia);
-          return (
-            <tr key={linha.chave} data-diferente={difere ? "true" : "false"} className="align-top">
-              <th scope="row" className="p-1.5 text-left font-medium">
-                {linha.rotulo}
-                {difere ? (
-                  <Badge variant="outline" className="ml-1 border-amber-500/50 text-amber-700">
-                    Difere
-                  </Badge>
-                ) : null}
-              </th>
-              <td className={cn("break-words border p-1.5", difere && "bg-amber-500/10")}>{linha.vigente}</td>
-              <td className={cn("break-words border p-1.5", difere && "bg-amber-500/10")}>{linha.candidata}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className="overflow-x-auto rounded-md border border-border">
+      <table className="w-full table-fixed border-collapse text-sm" aria-label="Comparador de Divergência">
+        <thead>
+          <tr className="border-b border-border bg-surface/65 text-left">
+            <th scope="col" className="w-1/4 p-2 text-xs font-medium text-muted-foreground" />
+            <th scope="col" className="border-l border-border p-2 text-xs font-semibold text-foreground">
+              Vigente humana
+              <span className="block font-mono text-[11px] font-normal text-muted-foreground">
+                {vigente.origem === "humana" ? "Humana" : "IA"}
+              </span>
+            </th>
+            <th scope="col" className="border-l border-border p-2 text-xs font-semibold text-foreground">
+              Candidata IA
+              <span className="block font-mono text-[11px] font-normal text-muted-foreground">
+                Confiança {formatarConfianca(divergencia.confianca_candidata)}
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {linhas.map((linha) => {
+            const difere = diferente(linha, vigente, divergencia);
+            return (
+              <tr
+                key={linha.chave}
+                data-diferente={difere ? "true" : "false"}
+                className="border-t border-border align-top"
+              >
+                <th scope="row" className="bg-surface/35 p-2 text-left text-xs font-medium text-foreground">
+                  {linha.rotulo}
+                  {difere ? (
+                    <Badge variant="outline" className="ml-1 mt-1 border-amber-700/30 bg-amber-50 text-amber-900">
+                      Difere
+                    </Badge>
+                  ) : null}
+                </th>
+                <td className={cn("break-words border-l border-border p-2 text-[13px]", difere && "bg-amber-50/70")}>
+                  {linha.vigente}
+                </td>
+                <td className={cn("break-words border-l border-border p-2 text-[13px]", difere && "bg-amber-50/70")}>
+                  {linha.candidata}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

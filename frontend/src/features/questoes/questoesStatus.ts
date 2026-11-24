@@ -8,8 +8,8 @@ export interface StatusBadgeItem {
   className?: string;
 }
 
-const AMBAR = "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300";
-const VERDE = "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+const AMBAR = "border-amber-700/25 bg-amber-50 text-amber-900";
+const VERDE = "border-emerald-700/25 bg-emerald-50 text-emerald-800";
 
 /** Badges de status do card, na ordem: Pendente, Prioritária, Aprovada, Divergência, Anulada, Disciplina arquivada. */
 export function getStatusBadges(item: ItemQuestaoResponse): StatusBadgeItem[] {

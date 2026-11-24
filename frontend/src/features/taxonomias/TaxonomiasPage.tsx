@@ -31,15 +31,15 @@ export function TaxonomiasPage() {
 
   return (
     <section className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Taxonomias</h1>
+      <header className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-[-0.025em] text-foreground">Taxonomias</h1>
         <p className="text-sm text-muted-foreground">
           Gerencie Taxonomias e Disciplinas, versione Perfis de Classificação e acompanhe
           Execuções.
         </p>
-      </div>
+      </header>
 
-      <div role="tablist" aria-label="Seções de Taxonomias" className="flex gap-1 border-b">
+      <div role="tablist" aria-label="Seções de Taxonomias" className="flex gap-1 border-b border-border">
         {ABAS.map((item) => (
           <button
             key={item.id}
@@ -50,10 +50,10 @@ export function TaxonomiasPage() {
             aria-controls="painel-taxonomias"
             onClick={() => selecionar(item.id)}
             className={cn(
-              "-mb-px border-b-2 px-4 py-2 text-sm font-medium",
+              "-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
               aba === item.id
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground",
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
             )}
           >
             {item.rotulo}

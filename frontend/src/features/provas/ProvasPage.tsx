@@ -125,9 +125,9 @@ export function ProvasPage() {
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Provas</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.025em] text-foreground">Provas</h1>
           <p className="text-sm text-muted-foreground">
             Acompanhe Ingestões, extração de Questões, atualização de Gabarito e reprocessamento.
           </p>
@@ -135,11 +135,11 @@ export function ProvasPage() {
 
         {provas.length > 0 ? (
           <Button type="button" onClick={() => setIngestaoOpen(true)}>
-            <Plus className="mr-1.5 h-4 w-4" aria-hidden="true" />
+            <Plus className="mr-1 h-4 w-4" aria-hidden="true" />
             Nova Ingestão
           </Button>
         ) : null}
-      </div>
+      </header>
 
       {retryError ? (
         <Alert variant="destructive">

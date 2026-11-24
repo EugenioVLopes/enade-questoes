@@ -303,10 +303,13 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
   const navegacao = (
     <nav className="flex items-center gap-2" aria-label="Navegação da fila">
       <Button type="button" variant="outline" size="sm" disabled={indice <= 0} onClick={irParaAnterior}>
-        <ChevronLeft className="mr-1 h-4 w-4" aria-hidden="true" />
+        <ChevronLeft className="mr-0.5 h-4 w-4" aria-hidden="true" />
         Anterior
       </Button>
-      <span className="text-sm text-muted-foreground" data-testid="revisao-posicao">
+      <span
+        className="rounded-sm border border-border bg-surface/70 px-2.5 py-1 font-mono text-xs font-medium text-muted-foreground tabular-nums"
+        data-testid="revisao-posicao"
+      >
         {rotuloPosicao}
       </span>
       <Button
@@ -317,7 +320,7 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
         onClick={() => void irParaProxima()}
       >
         Próxima
-        <ChevronRight className="ml-1 h-4 w-4" aria-hidden="true" />
+        <ChevronRight className="ml-0.5 h-4 w-4" aria-hidden="true" />
       </Button>
     </nav>
   );
@@ -372,8 +375,28 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
   } else {
     const erro = erroVeredito && erroVeredito.id === selecionadaId ? erroVeredito.mensagem : null;
     conteudo = (
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">{navegacao}</div>
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {navegacao}
+          <div
+            className="hidden items-center gap-3 text-xs text-muted-foreground xl:flex"
+            aria-hidden="true"
+          >
+            <span className="inline-flex items-center gap-1">
+              <kbd className="kbd-cap">A</kbd> Aprovar
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <kbd className="kbd-cap">E</kbd> Editar
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <kbd className="kbd-cap">←</kbd>
+              <kbd className="kbd-cap">→</kbd> Navegar
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <kbd className="kbd-cap">Esc</kbd> Fechar
+            </span>
+          </div>
+        </div>
         {detalhe.isError ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" aria-hidden="true" />
@@ -388,8 +411,11 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
         ) : !questao || !activeTaxonomia ? (
           <Skeleton className="h-64 w-full rounded-lg" role="status" aria-label="Carregando Questão" />
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
-            <div className="min-w-0 lg:max-h-[calc(100vh-15rem)] lg:overflow-y-auto lg:pr-2" data-testid="coluna-leitura">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(340px,1fr)]">
+            <div
+              className="min-w-0 lg:max-h-[calc(100vh-11rem)] lg:overflow-y-auto lg:pr-1"
+              data-testid="coluna-leitura"
+            >
               <QuestaoLeitura
                 questao={questao}
                 acoesExtras={renderAcoesQuestao?.(questao)}
@@ -397,7 +423,7 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
               />
             </div>
             <aside
-              className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-15rem)] lg:self-start lg:overflow-y-auto"
+              className="min-w-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-11rem)] lg:self-start lg:overflow-y-auto"
               aria-label="Veredito"
               data-testid="coluna-veredito"
             >
@@ -430,8 +456,8 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
 
   return (
     <section className="space-y-4">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Revisão</h1>
+      <header className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-[-0.025em] text-foreground">Revisão</h1>
         <p className="text-sm text-muted-foreground">
           Aprove, corrija e resolva Divergências sob a Taxonomia ativa
           {activeTaxonomia ? (
@@ -441,10 +467,10 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
           ) : null}
           .
         </p>
-      </div>
+      </header>
 
       {modo.tipo === "abas" ? (
-        <div role="tablist" aria-label="Filas de Revisão" className="flex flex-wrap gap-1 border-b">
+        <div role="tablist" aria-label="Filas de Revisão" className="flex flex-wrap gap-1 border-b border-border">
           {ABAS.map((aba) => (
             <button
               key={aba}
@@ -454,8 +480,10 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
               aria-selected={abaAtiva === aba}
               aria-controls="painel-revisao"
               className={cn(
-                "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
-                abaAtiva === aba ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+                "-mb-px border-b-2 px-3.5 py-2.5 text-sm font-medium transition-colors",
+                abaAtiva === aba
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
               )}
               onClick={() => setSearchParams((prev) => comAba(prev, aba))}
             >
@@ -464,8 +492,8 @@ export function RevisaoPage({ renderAcoesQuestao }: RevisaoPageProps = {}) {
           ))}
         </div>
       ) : (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm">
-          <span className="font-medium">Recorte filtrado</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-surface/65 px-3.5 py-2.5 text-sm">
+          <span className="font-medium text-foreground">Recorte filtrado</span>
           <Button asChild variant="outline" size="sm">
             <Link to={`/revisao${buildSearchWithTaxonomia("", activeTaxonomiaId)}`}>Ver filas por aba</Link>
           </Button>

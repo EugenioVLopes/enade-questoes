@@ -60,12 +60,14 @@ export function FiltrosBar({ filtros, disciplinas, provas, onChange }: FiltrosBa
   const anos = Array.from(new Set(provas.map((prova) => prova.ano))).sort((a, b) => b - a);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4 rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-end gap-3">
         <div className="relative min-w-[16rem] flex-1 space-y-1.5">
-          <Label htmlFor="filtro-busca">Busca textual</Label>
+          <Label htmlFor="filtro-busca" className="text-xs font-medium text-muted-foreground">
+            Busca textual
+          </Label>
           <Search
-            className="pointer-events-none absolute bottom-3 left-3 h-4 w-4 text-muted-foreground"
+            className="pointer-events-none absolute bottom-2.5 left-3 h-4 w-4 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
@@ -79,9 +81,11 @@ export function FiltrosBar({ filtros, disciplinas, provas, onChange }: FiltrosBa
         <MaisFiltrosPopover filtros={filtros} onChange={onChange} />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 border-t border-border/70 pt-3.5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
-          <Label htmlFor="filtro-disciplina">Disciplina</Label>
+          <Label htmlFor="filtro-disciplina" className="text-xs font-medium text-muted-foreground">
+            Disciplina
+          </Label>
           <Select
             value={filtros.disciplina_id ?? TODAS}
             onValueChange={(value) => onChange({ disciplina_id: value === TODAS ? undefined : value })}
@@ -105,12 +109,16 @@ export function FiltrosBar({ filtros, disciplinas, provas, onChange }: FiltrosBa
               disabled={!filtros.disciplina_id}
               onCheckedChange={(checked) => onChange({ somentePrincipal: checked === true })}
             />
-            <Label htmlFor="filtro-somente-principal">Somente principal</Label>
+            <Label htmlFor="filtro-somente-principal" className="text-xs font-normal text-muted-foreground">
+              Somente principal
+            </Label>
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="filtro-prova">Prova</Label>
+          <Label htmlFor="filtro-prova" className="text-xs font-medium text-muted-foreground">
+            Prova
+          </Label>
           <Select
             value={filtros.prova_id ?? TODAS}
             onValueChange={(value) => onChange({ prova_id: value === TODAS ? undefined : value })}
@@ -130,7 +138,9 @@ export function FiltrosBar({ filtros, disciplinas, provas, onChange }: FiltrosBa
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="filtro-ano">Ano</Label>
+          <Label htmlFor="filtro-ano" className="text-xs font-medium text-muted-foreground">
+            Ano
+          </Label>
           <Select
             value={filtros.ano === undefined ? TODAS : String(filtros.ano)}
             onValueChange={(value) => onChange({ ano: value === TODAS ? undefined : Number(value) })}
@@ -150,7 +160,9 @@ export function FiltrosBar({ filtros, disciplinas, provas, onChange }: FiltrosBa
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="filtro-status-revisao">Status de revisão</Label>
+          <Label htmlFor="filtro-status-revisao" className="text-xs font-medium text-muted-foreground">
+            Status de revisão
+          </Label>
           <Select
             value={filtros.status_revisao ?? TODAS}
             onValueChange={(value) =>

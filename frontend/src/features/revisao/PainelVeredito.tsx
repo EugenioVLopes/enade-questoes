@@ -149,7 +149,7 @@ export function PainelVeredito({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 rounded-lg border border-border bg-card p-5">
       {questao.disciplinas_arquivadas_em_uso.length > 0 ? (
         <Alert>
           <AlertTitle>Disciplina arquivada em uso</AlertTitle>
@@ -160,20 +160,22 @@ export function PainelVeredito({
       ) : null}
       {corpo}
       {mostrarFormulario ? (
-        <FormularioClassificacao
-          key={`formulario-${taxonomia.id}`}
-          disciplinas={disciplinas}
-          inicial={inicial}
-          rotuloEnvio={edicao.rotulo}
-          enviando={ocupado}
-          erro={erro}
-          onEnviar={edicao.enviar}
-          onCancelar={vigente ? () => onEditandoChange(false) : undefined}
-          onAlterar={!vigente ? () => onEditandoChange(true) : undefined}
-        />
+        <div className="border-t border-border pt-4">
+          <FormularioClassificacao
+            key={`formulario-${taxonomia.id}`}
+            disciplinas={disciplinas}
+            inicial={inicial}
+            rotuloEnvio={edicao.rotulo}
+            enviando={ocupado}
+            erro={erro}
+            onEnviar={edicao.enviar}
+            onCancelar={vigente ? () => onEditandoChange(false) : undefined}
+            onAlterar={!vigente ? () => onEditandoChange(true) : undefined}
+          />
+        </div>
       ) : null}
       {!vigente ? (
-        <div className="space-y-2 border-t pt-3">
+        <div className="space-y-2 border-t border-border pt-4">
           <Button
             type="button"
             variant="outline"

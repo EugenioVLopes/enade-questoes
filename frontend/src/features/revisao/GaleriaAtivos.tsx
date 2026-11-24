@@ -23,16 +23,20 @@ export function GaleriaAtivos({ ativos, rotulo, onAbertoChange }: GaleriaAtivosP
 
   return (
     <>
-      <ul className="flex flex-wrap gap-2" aria-label={rotulo}>
+      <ul className="flex flex-wrap gap-3" aria-label={rotulo}>
         {ativos.map((ativo, indice) => (
           <li key={ativo.id}>
             <button
               type="button"
-              className="block overflow-hidden rounded-md border bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="group block overflow-hidden rounded-md border border-border bg-white p-2 transition-all duration-150 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`Ampliar ${rotulo.toLowerCase()} ${indice + 1}`}
               onClick={() => alterar(ativo)}
             >
-              <img src={ativo.url_arquivo} alt={`${rotulo} ${indice + 1}`} className="max-h-40 max-w-xs object-contain" />
+              <img
+                src={ativo.url_arquivo}
+                alt={`${rotulo} ${indice + 1}`}
+                className="max-h-60 max-w-full object-contain transition-transform duration-200 group-hover:scale-[1.02] sm:max-w-sm"
+              />
             </button>
           </li>
         ))}

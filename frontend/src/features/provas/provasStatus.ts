@@ -22,7 +22,7 @@ const INGESTAO_STATUS_META: Record<StatusIngestao, StatusBadgeMeta> = {
   concluida: {
     label: "Ingestão concluída",
     variant: "outline",
-    className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    className: "border-emerald-700/25 bg-emerald-50 text-emerald-800",
     isActive: false,
   },
   erro: {
@@ -72,13 +72,13 @@ const CLASSIFICACAO_STATUS_META: Record<string, StatusBadgeMeta> = {
   concluida: {
     label: "Classificação concluída",
     variant: "outline",
-    className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    className: "border-emerald-700/25 bg-emerald-50 text-emerald-800",
     isActive: false,
   },
   concluida_com_erros: {
     label: "Classificação concluída com falhas",
     variant: "secondary",
-    className: "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300",
+    className: "border-amber-700/25 bg-amber-50 text-amber-900",
     isActive: false,
   },
   interrompida: {
