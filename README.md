@@ -11,8 +11,9 @@ O backend em Python (FastAPI) e o frontend em React (Vite e TypeScript) entregam
 - **Classificação multimodal com travas determinísticas.** Integração com provedores compatíveis com a API OpenAI (Google Gemini por padrão) usando cache local por hash SHA-256, controle de taxa, validação de domínio e priorização de itens incertos.
 - **Consulta de Questões.** Busca textual híbrida no PostgreSQL (`TSVECTOR` combinado com `pg_trgm`) e filtros por Prova, Taxonomia, Disciplina, estado de revisão, confiança e alertas.
 - **Revisão humana e Divergências de Reclassificação.** Interface dividida com renderização de Markdown e KaTeX, atalhos de teclado, histórico de classificações, aprovação condicional e resolução de divergências sem perder o histórico revisado.
+- **Edição de conteúdo, Ativos Visuais, conferência de PDF e alertas na Revisão.** Modo sob demanda para editar enunciado (`Editar / Preview` em Markdown GFM e KaTeX), Alternativas `A`–`E` e Gabarito individual, gerenciar Ativos Visuais manualmente (upload, substituição, reordenação, vínculo e exclusão), visualizar páginas originais do PDF, confirmar alertas de inspeção (`pdf_via_ocr` e `fonte_symbol_detectada`) e disparar reclassificação individual explícita.
 
-Recursos ainda planejados para as próximas entregas do projeto: edição sob demanda de conteúdo e ativos visuais pela tela de Revisão (tarefa 13), CLI de avaliação offline contra Conjunto-Ouro (tarefa 14) e relatório de validação ponta a ponta em provas reais (tarefa 15).
+Recursos ainda planejados para as próximas entregas do projeto: CLI de avaliação offline contra Conjunto-Ouro (tarefa 14) e relatório de validação ponta a ponta em provas reais (tarefa 15).
 
 ## Pré-requisitos
 
