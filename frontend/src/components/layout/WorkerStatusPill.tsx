@@ -4,8 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { useWorkerStatus } from "@/api/operacao";
 import { buildSearchWithTaxonomia, useTaxonomia } from "@/components/layout/useTaxonomia";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function WorkerStatusPill() {
+export interface WorkerStatusPillProps {
+  className?: string;
+}
+
+export function WorkerStatusPill({ className }: WorkerStatusPillProps = {}) {
   const navigate = useNavigate();
   const { activeTaxonomiaId } = useTaxonomia();
   const workerStatus = useWorkerStatus();
@@ -23,10 +28,13 @@ export function WorkerStatusPill() {
       size="sm"
       onClick={() => navigate(targetHref)}
       aria-live="polite"
-      className="gap-2 rounded-full border border-primary/20 bg-accent text-accent-foreground hover:bg-accent/80"
+      className={cn(
+        "gap-2 rounded-md border border-primary/25 bg-accent/80 text-xs text-accent-foreground hover:bg-accent",
+        className,
+      )}
     >
-      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-      <span>{workerStatus.label ?? "Worker ativo"}</span>
+      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden="true" />
+      <span className="truncate">{workerStatus.label ?? "Worker ativo"}</span>
     </Button>
   );
 }

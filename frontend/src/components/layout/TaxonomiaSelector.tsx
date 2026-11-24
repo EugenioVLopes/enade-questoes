@@ -14,22 +14,30 @@ export function TaxonomiaSelector() {
     useTaxonomia();
 
   if (isLoading) {
-    return <Skeleton className="h-9 w-64" aria-label="Carregando taxonomias" />;
+    return (
+      <div className="space-y-1.5">
+        <span className="block text-xs font-medium text-muted-foreground">Taxonomia</span>
+        <Skeleton className="h-9 w-full" aria-label="Carregando taxonomias" />
+      </div>
+    );
   }
 
   if (error && taxonomias.length === 0) {
     return (
-      <span className="text-sm text-muted-foreground" role="status">
-        Taxonomia indisponível
-      </span>
+      <div className="space-y-1">
+        <span className="block text-xs font-medium text-muted-foreground">Taxonomia</span>
+        <span className="block text-xs text-muted-foreground" role="status">
+          Taxonomia indisponível
+        </span>
+      </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="space-y-1.5">
       <Label
         htmlFor="global-taxonomia-select"
-        className="sr-only sm:not-sr-only sm:text-xs sm:text-muted-foreground"
+        className="block text-xs font-medium text-muted-foreground"
       >
         Taxonomia
       </Label>
@@ -41,13 +49,17 @@ export function TaxonomiaSelector() {
         <SelectTrigger
           id="global-taxonomia-select"
           aria-label="Taxonomia ativa"
-          className="h-9 w-[220px] sm:w-[280px]"
+          className="h-auto min-h-9 w-full bg-card py-2 text-left text-[13px] font-medium leading-snug [&>span]:line-clamp-none [&>span]:whitespace-normal"
         >
           <SelectValue placeholder="Selecione uma Taxonomia" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-w-[var(--radix-select-trigger-width)]">
           {taxonomias.map((taxonomia) => (
-            <SelectItem key={taxonomia.id} value={taxonomia.id}>
+            <SelectItem
+              key={taxonomia.id}
+              value={taxonomia.id}
+              className="whitespace-normal py-2 leading-snug"
+            >
               {taxonomia.nome}
             </SelectItem>
           ))}

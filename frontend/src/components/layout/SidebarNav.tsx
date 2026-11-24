@@ -50,10 +50,10 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                "flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors",
+                "flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors",
                 isActive
-                  ? "bg-accent font-medium text-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "border-border bg-card font-medium text-primary shadow-[inset_2.5px_0_0_0_oklch(var(--primary))]"
+                  : "border-transparent text-muted-foreground hover:bg-card/70 hover:text-foreground",
               )
             }
           >
@@ -64,6 +64,7 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
             {item.badgeCount !== undefined && item.badgeCount > 0 ? (
               <Badge
                 variant="secondary"
+                className="font-mono text-[11px] font-medium"
                 aria-label={`${item.badgeCount} pendências para revisão`}
               >
                 {item.badgeCount}
