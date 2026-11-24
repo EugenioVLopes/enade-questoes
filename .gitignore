@@ -2,17 +2,7 @@
 data/
 
 # Artefatos locais de MCP e ferramentas de IA (ver AGENTS.md)
-.cbmignore
-.codebase-memory/
-.codebase-memory.json
-.serena/
-.slim/
-.opencode/
-.codex/
-.claude/
-.gemini/
-.pi/
-.agents/
+.*/
 docs/**/artefatos/
 
 # Ambiente Python / Node
