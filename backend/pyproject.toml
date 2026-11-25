@@ -16,11 +16,16 @@ dependencies = [
     "pydantic-settings>=2.7",
     "pypdfium2>=5.15.2",
     "python-multipart>=0.0.20",
+    "pyyaml>=6.0",
     "sqlalchemy>=2.0",
     "torch",
     "torchvision",
+    "typer>=0.15",
     "uvicorn[standard]>=0.34",
 ]
+
+[project.scripts]
+enade-eval = "presentation.cli.eval_cli:main"
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
@@ -84,6 +89,7 @@ layers = [
 ]
 ignore_imports = [
     "presentation.main -> infrastructure.**",
+    "presentation.cli.bootstrap -> infrastructure.**",
 ]
 
 [[tool.importlinter.contracts]]

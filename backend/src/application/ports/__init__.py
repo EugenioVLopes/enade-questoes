@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from application.ports.armazenamento import ArmazenamentoArquivos
+from application.ports.avaliacao import ConsultaAvaliacao, RegistroHistoricoClassificacao
 from application.ports.classificacao import (
     ClassificadorMultimodal,
     IdentidadeClassificador,
@@ -37,11 +38,13 @@ __all__ = [
     "ArmazenamentoArquivos",
     "AtivoVisualExtraido",
     "ClassificadorMultimodal",
+    "ConsultaAvaliacao",
     "ExtratorGabarito",
     "ExtratorProva",
     "IdentidadeClassificador",
     "ItemGabaritoExtraido",
     "QuestaoExtraida",
+    "RegistroHistoricoClassificacao",
     "RenderizadorPaginaPdf",
     "RepositorioAtivosVisuais",
     "RepositorioClassificacoes",

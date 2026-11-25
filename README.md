@@ -12,8 +12,9 @@ O backend em Python (FastAPI) e o frontend em React (Vite e TypeScript) entregam
 - **Consulta de Questões.** Busca textual híbrida no PostgreSQL (`TSVECTOR` combinado com `pg_trgm`) e filtros por Prova, Taxonomia, Disciplina, estado de revisão, confiança e alertas.
 - **Revisão humana e Divergências de Reclassificação.** Interface dividida com renderização de Markdown e KaTeX, atalhos de teclado, histórico de classificações, aprovação condicional e resolução de divergências sem perder o histórico revisado.
 - **Edição de conteúdo, Ativos Visuais, conferência de PDF e alertas na Revisão.** Modo sob demanda para editar enunciado (`Editar / Preview` em Markdown GFM e KaTeX), Alternativas `A`–`E` e Gabarito individual, gerenciar Ativos Visuais manualmente (upload, substituição, reordenação, vínculo e exclusão), visualizar páginas originais do PDF, confirmar alertas de inspeção (`pdf_via_ocr` e `fonte_symbol_detectada`) e disparar reclassificação individual explícita.
+- **Avaliação offline (`enade-eval`), Conjunto-Ouro e histórico IA × Humano.** CLI somente-leitura no PostgreSQL para exportar snapshots de Conjunto-Ouro (`exportar-ouro`), executar avaliações com checagem *preflight* e métricas em 3 camadas (`avaliar`), validar regressões com gate híbrido (`comparar`) e consultar concordância entre predições da IA e revisões humanas (`historico`).
 
-Recursos ainda planejados para as próximas entregas do projeto: CLI de avaliação offline contra Conjunto-Ouro (tarefa 14) e relatório de validação ponta a ponta em provas reais (tarefa 15).
+Recursos ainda planejados para a próxima entrega do projeto: relatório de validação ponta a ponta em provas reais (tarefa 15).
 
 ## Pré-requisitos
 
@@ -102,7 +103,11 @@ Execute os comandos abaixo a partir da raiz do repositório:
 | `make dev`          | Executa `dev-backend` e `dev-frontend` em paralelo.                               |
 | `make lint`         | Executa `ruff check`, `ruff format --check`, `lint-imports`, `tsc -b` e `eslint`. |
 | `make test`         | Executa `pytest` no backend e `vitest run` no frontend.                           |
-| `make types`        | Exporta o esquema OpenAPI do backend e regenera `frontend/src/api/schema.d.ts`.   |
+| `make types`         | Exporta o esquema OpenAPI do backend e regenera `frontend/src/api/schema.d.ts`.   |
+| `make golden-export` | Exporta o Conjunto-Ouro da Taxonomia (`TAXONOMIA`, `SAIDA`) para JSON versionado. |
+| `make eval-run`      | Executa avaliação offline (`OURO`, `PERFIL`, `EVAL_ARGS`) sem gravar no banco.    |
+| `make eval-compare`  | Compara dois relatórios (`BASELINE`, `CANDIDATO`, `MODO_MIGRACAO=1`) via gate.    |
+| `make eval-history`  | Exibe métricas históricas de concordância IA × Humano (`TAXONOMIA`).              |
 
 Para rodar apenas os testes unitários do backend sem depender do banco de dados nem de chaves de API, execute:
 

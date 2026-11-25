@@ -1,6 +1,6 @@
 # 14 — CLI de avaliação offline (`enade-eval`), Conjunto-Ouro e histórico IA × Humano
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Explicação: [explicacao.md](../explicacao.md) · Glossário: [GLOSSARY.md](../../../GLOSSARY.md) · Decisão: [métricas de qualidade e conjunto-ouro](../decisoes/11-metricas-qualidade-e-conjunto-ouro.md)
 
@@ -40,11 +40,11 @@ Entrypoint CLI `uv run enade-eval` (e atalhos no `Makefile`) com os 4 subcomando
 
 ## Critérios de aceite
 
-- [ ] `exportar-ouro` gera JSON determinístico por chave natural excluindo questões com `Alerta de Extração` crítico aberto e mantendo `ANULADA`s revisadas com `situacao_gabarito`.
-- [ ] `avaliar` aborta no *preflight* sem chamar o LLM se detectar `Disciplina` arquivada, `Questão` ausente ou alerta crítico aberto; quando válido, roda sem alterar uma única linha no PostgreSQL.
-- [ ] `avaliar` aceita perfil do banco ou rascunho local em YAML/JSON, respeita `--no-cache`, `--repeticoes N` e overrides `--base-url`/`--model`, e grava JSON + Markdown em `DATA_DIR/evals/`.
-- [ ] `comparar` rejeita runs de snapshots diferentes, aplica corretamente o gate padrão e `--modo-migracao`, imprime ganhos/regressões por questão e retorna exit code `0` ou `1`.
-- [ ] `historico` calcula concordância IA × Humano direto do PostgreSQL agrupada por `Perfil de Classificação` e modelo.
+- [x] `exportar-ouro` gera JSON determinístico por chave natural excluindo questões com `Alerta de Extração` crítico aberto e mantendo `ANULADA`s revisadas com `situacao_gabarito`.
+- [x] `avaliar` aborta no *preflight* sem chamar o LLM se detectar `Disciplina` arquivada, `Questão` ausente ou alerta crítico aberto; quando válido, roda sem alterar uma única linha no PostgreSQL.
+- [x] `avaliar` aceita perfil do banco ou rascunho local em YAML/JSON, respeita `--no-cache`, `--repeticoes N` e overrides `--base-url`/`--model`, e grava JSON + Markdown em `DATA_DIR/evals/`.
+- [x] `comparar` rejeita runs de snapshots diferentes, aplica corretamente o gate padrão e `--modo-migracao`, imprime ganhos/regressões por questão e retorna exit code `0` ou `1`.
+- [x] `historico` calcula concordância IA × Humano direto do PostgreSQL agrupada por `Perfil de Classificação` e modelo.
 
 ## Verificação
 
@@ -52,4 +52,29 @@ Entrypoint CLI `uv run enade-eval` (e atalhos no `Makefile`) com os 4 subcomando
 
 ## Evidências e pendências
 
-Pendente de execução.
+**Implementação**:
+- **Empacotamento e CLI (`backend/pyproject.toml`, `backend/src/presentation/cli/`)**:
+  - Registrado o entrypoint `enade-eval = "presentation.cli.eval_cli:main"` em `[project.scripts]`, adicionadas dependências `typer>=0.15` e `pyyaml>=6.0`, e incluído `presentation.cli.bootstrap -> infrastructure.**` nas exceções do `import-linter`.
+  - `eval_cli.py` e `bootstrap.py`: CLI Typer/Rich com os subcomandos `exportar-ouro`, `avaliar`, `comparar` e `historico` e composição isolada de dependências (sem importar `presentation.main`).
+- **Persistência somente-leitura (`backend/src/infrastructure/persistence/`)**:
+  - `database.py`: `create_readonly_db_engine` (`default_transaction_read_only=on` e `SET TRANSACTION READ ONLY`) e `create_readonly_session_factory` (`autoflush=False` e transação `READ ONLY` via evento `after_begin`).
+  - `avaliacao.py` e `backend/src/application/ports/avaliacao.py`: portas `ConsultaAvaliacao` e `RegistroHistoricoClassificacao` e adaptadores SQLAlchemy somente-leitura (`ConsultaAvaliacaoSqlAlchemy` e `RepositorioConjuntoOuroSqlAlchemy`).
+- **Casos de uso de avaliação (`backend/src/application/avaliacao.py`)**:
+  - `ExportarConjuntoOuroUseCase`: exporta snapshot JSON determinístico por chave natural `(exame, curso, ano, numero)` sem UUIDs nem mídia, filtrando questões com `Classificação` aprovada e zero `Alerta de Extração` crítico aberto (preservando `ANULADA`s revisadas e `situacao_gabarito`).
+  - `AvaliarConjuntoOuroUseCase`: executa checagem *preflight* obrigatória antes do LLM (existência da `Questão`, zero alerta crítico aberto e `Disciplina`s ativas na `Taxonomia`), carrega perfil do banco (`codigo@versao` ou `codigo:versao`) ou de arquivo YAML/JSON local, reutiliza `ClassificarQuestaoService` e travas determinísticas em modo somente-leitura com suporte a `--no-cache`, `--repeticoes` e overrides de provedor/endpoint/modelo, calcula métricas em 3 camadas via `domain/metricas_avaliacao.py` e grava relatórios JSON + Markdown em `DATA_DIR/evals/`.
+  - `CompararAvaliacoesUseCase`: valida igualdade de snapshot/taxonomia entre baseline e candidato, aplica o gate híbrido (piso estrutural duro + deltas relativos padrão ou `--modo-migracao`), lista ganhos e regressões questão-a-questão e retorna `exit code 0` ou `1`.
+  - `ConsultarHistoricoConcordanciaUseCase`: consulta somente-leitura agrupada por `Perfil de Classificação` e modelo (extraído de `snapshot_perfil`, com fallback `"(não registrado)"`), calculando aprovação direta, correção na `Disciplina` principal e correção apenas nas secundárias.
+- **Atalhos no `Makefile`**: alvos `golden-export`, `eval-run`, `eval-compare` e `eval-history`.
+- **Testes**: `backend/tests/unit/test_avaliacao_cli_e_servicos.py` e `backend/tests/integration/test_cli_eval.py`.
+
+**Verificação e auditoria (Teamwork)**:
+- Iteração 1 aprovada pela onda de verificação (`Reviewer 1`: `APPROVE`, `Challenger 1`: `CONFIRMED`, `Auditor 1`: `CLEAN`). O `Victory Audit` da rodada 1 apontou acoplamento de `sys.modules` quando `test_cli_comparar_exit_codes_e_nao_importa_presentation_main` rodava no mesmo processo após os testes de integração; corrigido na Iteração 2 isolando a verificação de importação em subprocesso.
+- Iteração 2 aprovada pela onda de verificação e confirmada pelo auditor independente na rodada 2 (`VICTORY CONFIRMED`):
+  - `cd backend && uv run pytest tests/integration/test_cli_eval.py -v`: `6 passed` (exit 0)
+  - `cd backend && uv run pytest -q`: `323 passed` (exit 0)
+  - `cd backend && uv run ruff check .`: `All checks passed!` (exit 0)
+  - `cd backend && uv run ruff format --check .`: `121 files already formatted` (exit 0)
+  - `cd backend && uv run lint-imports`: `Contracts: 3 kept, 0 broken` (exit 0)
+
+**Pendências registradas**:
+- Execução do smoke test com amostra curada em provas reais fica para a Tarefa 15.
