@@ -23,7 +23,7 @@ Especificação da organização-alvo dos arquivos de `backend/src/`, com as cam
 
 ## Not yet specified
 
-- Nenhuma. O caminho até o destino está claro, e o próximo passo é gerar `plano.md`, `explicacao.md`, `validacao.md` e `tarefas/` a partir das decisões 01 a 05.
+- Nenhuma. O caminho até o destino está claro. A implementação segue em [plano.md](plano.md), com [explicacao.md](explicacao.md), [validacao.md](validacao.md) e as 11 tarefas em `tarefas/`.
 
 ## Out of scope
 
