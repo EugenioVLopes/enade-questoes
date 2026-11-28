@@ -27,6 +27,6 @@
 
 - [x] Organização-alvo definida arquivo a arquivo para `domain/` ([decisão 01](decisoes/01-corte-domain.md)).
 - [x] Organização-alvo definida arquivo a arquivo para `application/` ([decisão 02](decisoes/02-corte-application.md)).
-- [ ] Organização-alvo definida arquivo a arquivo para `infrastructure/`.
+- [x] Organização-alvo definida arquivo a arquivo para `infrastructure/` ([decisão 03](decisoes/03-corte-infrastructure.md)).
 - [ ] Organização-alvo definida arquivo a arquivo para `presentation/`.
 - [ ] Sequência de tarefas de migração definida, com portão de verificação por tarefa.

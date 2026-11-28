@@ -17,6 +17,7 @@ Especificação da organização-alvo dos arquivos de `backend/src/`, com as cam
 
 - [Definir o corte dos arquivos de `domain/`](decisoes/01-corte-domain.md): `classificacao.py`, `prova.py` e `avaliacao.py` viram pacotes (3, 5 e 2 submódulos), os validadores privados ficam no submódulo que os usa ou em `_validacao.py` do pacote, e os demais arquivos de `domain/`, incluindo `__init__.py` e `alertas_extracao.py`, ficam como estão.
 - [Definir o corte dos arquivos de `application/`](decisoes/02-corte-application.md): `avaliacao.py`, `questoes.py` e `classificacao.py` viram pacotes (3, 4 e 2 submódulos, com `_apoio.py` privado em `questoes/`), enquanto `worker.py`, `provas.py`, `execucoes_classificacao.py`, `ports/` e os demais ficam como estão.
+- [Definir o corte dos arquivos de `infrastructure/`](decisoes/03-corte-infrastructure.md): `persistence/repositorios.py` vira pacote com 9 submódulos e `_apoio.py`, `models.py` com 3 submódulos e `base.py`, e `persistence/avaliacao.py` com 2. Os mapeadores compartilhados ficam públicos no submódulo dono, `condicao_busca_textual` vai para `persistence/busca_textual.py`, e `cliente_openai.py` e `posprocessamento.py` ficam como estão.
 
 ## Not yet specified
 
