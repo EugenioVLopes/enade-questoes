@@ -1,6 +1,6 @@
 # Validação — Reorganização dos arquivos do backend
 
-Status: **pendente** (linha de base registrada; nenhuma tarefa executada).
+Status: **em andamento** (linha de base registrada; tarefa 01 executada).
 
 Plano: [plano.md](plano.md) · Explicação: [explicacao.md](explicacao.md) · Pedido: [task.md](task.md) · Sequência e portão decididos em: [decisão 05](decisoes/05-sequencia-migracao.md).
 
@@ -179,7 +179,7 @@ A suíte, o `ruff`, o `lint-imports` e o OpenAPI não foram executados nesta eta
 
 | Tarefa | OpenAPI (`cmp`) | Reexportação | `pytest` | `ruff` | `lint-imports` | Teto | `explicacao.md` | Status |
 |---|---|---|---|---|---|---|---|---|
-| [01](tarefas/01-domain-prova.md) | — | — | — | — | — | — | — | pendente |
+| [01](tarefas/01-domain-prova.md) | igual | 13/0 falhas | 323 passed | ok | 3 kept | 215 máx. | corrigida | concluida |
 | [02](tarefas/02-domain-classificacao.md) | — | — | — | — | — | — | — | pendente |
 | [03](tarefas/03-domain-avaliacao.md) | — | — | — | — | — | — | não se aplica | pendente |
 | [04](tarefas/04-application-questoes.md) | — | — | — | — | — | — | — | pendente |
@@ -194,3 +194,23 @@ A suíte, o `ruff`, o `lint-imports` e o OpenAPI não foram executados nesta eta
 ## Evidências por tarefa
 
 Cada tarefa acrescenta aqui uma seção `### Tarefa NN` com os comandos e as saídas, no momento em que o portão é executado.
+
+### Tarefa 01
+
+Executada em 2026-11-28 sobre o commit `eb32e4f`, em `backend/`, com `PORTAO` no diretório temporário da sessão. O worker, o reviewer de requisitos e o victory auditor reexecutaram o portão "depois" cada um por conta própria, com os mesmos resultados.
+
+| Comando | Exit | Saída relevante |
+|---|---|---|
+| `git status --short` (antes) | 0 | vazio |
+| `openapi_export` antes | 0 | `openapi-antes.json` gravado |
+| `verificar_reexportacao.py antes … src/domain/prova.py` | 0 | `13 nomes públicos gravados` |
+| `openapi_export` depois + `cmp` | 0 | sem diferença |
+| `verificar_reexportacao.py depois … domain.prova` | 0 | `13 esperados, 0 fora do pacote, 0 falhas` |
+| `uv run pytest` | 0 | `323 passed, 688 warnings` |
+| `uv run ruff check .` | 0 | `All checks passed!` |
+| `uv run ruff format --check .` | 0 | `126 files already formatted` |
+| `uv run lint-imports` | 0 | `Contracts: 3 kept, 0 broken.` |
+| `wc -l src/domain/prova/*.py` | 0 | 215, 114, 103, 69, 29, 17 (`questao`, `alerta_extracao`, `ingestao`, `prova`, `__init__`, `_validacao`) |
+| `git diff --exit-code HEAD -- src/domain/__init__.py src/domain/alertas_extracao.py tests/` | 0 | sem diferença |
+
+`docs/planejamento-inicial/explicacao.md:117` passou a citar `backend/src/domain/prova/alerta_extracao.py:23`, que é o início de `ALERTAS_ESTRUTURAIS`.

@@ -1,6 +1,6 @@
 # 01 — Dividir `domain/prova.py` em pacote
 
-Status: `pendente`
+Status: `concluida`
 
 Plano: [plano.md](../plano.md) · Explicação: [explicacao.md](../explicacao.md) · Validação: [validacao.md](../validacao.md) · Corte: [decisão 01](../decisoes/01-corte-domain.md), seção `domain/prova/`
 
@@ -45,13 +45,13 @@ A tabela símbolo → submódulo, com as linhas estimadas, está na [decisão 01
 
 ## Critérios de aceite
 
-- [ ] `domain/prova.py` removido e os 5 submódulos criados com os símbolos da decisão 01.
-- [ ] `__init__.py` com `__all__` dos 13 nomes; o script de reexportação sai com 0 falhas.
-- [ ] `cmp` do OpenAPI antes/depois sem diferença.
-- [ ] `pytest`, `ruff check`, `ruff format --check` e `lint-imports` (3 contratos mantidos) passando, sem mudança em `tests/`.
-- [ ] `git diff --exit-code HEAD -- src/domain/__init__.py src/domain/alertas_extracao.py` sem diferença.
-- [ ] Cada arquivo novo com até cerca de 400 linhas.
-- [ ] Referência de `explicacao.md` corrigida.
+- [x] `domain/prova.py` removido e os 5 submódulos criados com os símbolos da decisão 01.
+- [x] `__init__.py` com `__all__` dos 13 nomes; o script de reexportação sai com 0 falhas.
+- [x] `cmp` do OpenAPI antes/depois sem diferença.
+- [x] `pytest`, `ruff check`, `ruff format --check` e `lint-imports` (3 contratos mantidos) passando, sem mudança em `tests/`.
+- [x] `git diff --exit-code HEAD -- src/domain/__init__.py src/domain/alertas_extracao.py` sem diferença.
+- [x] Cada arquivo novo com até cerca de 400 linhas.
+- [x] Referência de `explicacao.md` corrigida.
 
 ## Verificação
 
@@ -64,4 +64,11 @@ git diff --exit-code HEAD -- src/domain/__init__.py src/domain/alertas_extracao.
 
 ## Evidências e pendências
 
-Nenhuma ainda.
+Executada em 2026-11-28 sobre o commit `eb32e4f`, com o workflow teamwork (iteração única, `VICTORY CONFIRMED`). As saídas do portão estão em [validacao.md](../validacao.md#tarefa-01).
+
+- `wc -l src/domain/prova/*.py`: `questao.py` 215, `alerta_extracao.py` 114, `ingestao.py` 103, `prova.py` 69, `__init__.py` 29, `_validacao.py` 17.
+- Corpos dos 16 símbolos de topo (3 constantes, 3 funções privadas e 10 classes) iguais aos de `HEAD` por `ast.dump` e pelo texto-fonte com decorators.
+- Imports adicionados em relação ao corte da decisão 01: `ErroValidacaoDominio` em `_validacao.py` e `ClassVar` em `alerta_extracao.py`, os dois exigidos pelos corpos movidos. O import de `domain.faixas_enade` continua lazy em `Prova.__post_init__`, porque `faixas_enade.py` importa `FaixaQuestoes` de `domain.prova`.
+- `__all__` segue a ordem estilo isort (constantes primeiro), igual à de `src/domain/__init__.py`.
+- `__module__` das classes passou de `domain.prova` para o submódulo, o que era esperado: a decisão 01 verificou que nada depende disso.
+- Validação manual e aceite: pendentes.
