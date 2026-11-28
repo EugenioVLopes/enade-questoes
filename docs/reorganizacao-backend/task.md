@@ -29,4 +29,4 @@
 - [x] Organização-alvo definida arquivo a arquivo para `application/` ([decisão 02](decisoes/02-corte-application.md)).
 - [x] Organização-alvo definida arquivo a arquivo para `infrastructure/` ([decisão 03](decisoes/03-corte-infrastructure.md)).
 - [x] Organização-alvo definida arquivo a arquivo para `presentation/` ([decisão 04](decisoes/04-corte-presentation.md)).
-- [ ] Sequência de tarefas de migração definida, com portão de verificação por tarefa.
+- [x] Sequência de tarefas de migração definida, com portão de verificação por tarefa ([decisão 05](decisoes/05-sequencia-migracao.md)).
