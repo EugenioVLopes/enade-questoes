@@ -1,6 +1,6 @@
 # 02 — Dividir `domain/classificacao.py` em pacote
 
-Status: `pendente`
+Status: `aguardando aceite` (executada e verificada; falta validação manual e aceite)
 
 Plano: [plano.md](../plano.md) · Explicação: [explicacao.md](../explicacao.md) · Validação: [validacao.md](../validacao.md) · Corte: [decisão 01](../decisoes/01-corte-domain.md), seção `domain/classificacao/`
 
@@ -45,13 +45,13 @@ Cada validador privado é usado por um só submódulo, então o pacote não tem 
 
 ## Critérios de aceite
 
-- [ ] `domain/classificacao.py` removido e os 3 submódulos criados com os símbolos da decisão 01.
-- [ ] `__all__` com os 6 nomes; script de reexportação com 0 falhas.
-- [ ] `cmp` do OpenAPI sem diferença.
-- [ ] `pytest`, `ruff check`, `ruff format --check` e `lint-imports` passando, sem mudança em `tests/`.
-- [ ] `domain/__init__.py` sem diferença.
-- [ ] Cada arquivo novo com até cerca de 400 linhas.
-- [ ] As duas referências de `explicacao.md` corrigidas.
+- [x] `domain/classificacao.py` removido e os 3 submódulos criados com os símbolos da decisão 01.
+- [x] `__all__` com os 6 nomes; script de reexportação com 0 falhas.
+- [x] `cmp` do OpenAPI sem diferença.
+- [x] `pytest`, `ruff check`, `ruff format --check` e `lint-imports` passando, sem mudança em `tests/`.
+- [x] `domain/__init__.py` sem diferença.
+- [x] Cada arquivo novo com até cerca de 400 linhas.
+- [x] As duas referências de `explicacao.md` corrigidas.
 
 ## Verificação
 
@@ -64,4 +64,11 @@ git diff --exit-code HEAD -- src/domain/__init__.py
 
 ## Evidências e pendências
 
-Nenhuma ainda.
+Executada em 2026-11-28 sobre o commit `76b0cfb`, com o workflow teamwork (2 iterações, `VICTORY CONFIRMED`). As saídas do portão estão em [validacao.md](../validacao.md#tarefa-02).
+
+- `wc -l src/domain/classificacao/*.py`: `execucao.py` 270, `classificacao.py` 253, `perfil.py` 112, `__init__.py` 21.
+- Corpos dos 12 símbolos de topo (6 funções privadas, 4 classes e 2 funções públicas) iguais aos de `HEAD` pelo texto-fonte com decorators. Os 169 cenários de runtime comparados com `HEAD` deram saídas e exceções iguais.
+- Única dependência entre submódulos: `execucao.py` importa `PerfilClassificacao` de `domain.classificacao.perfil`. Sem ciclo.
+- `docs/planejamento-inicial/explicacao.md:118` passou a citar `backend/src/domain/classificacao/classificacao.py:114` (`def substituir_por_correcao(`) e `:180` (`origem=OrigemClassificacao.HUMANA,` em `criar_classificacao_humana`, a mesma instrução que a antiga `:540` apontava). A iteração 1 corrigiu só a primeira referência, e o gate reprovou. A iteração 2 corrigiu a segunda.
+- `__module__` das classes passou de `domain.classificacao` para o submódulo, e `domain.classificacao` deixou de expor como atributo os nomes que o módulo antigo só importava (`math`, `Any`, `Taxonomia`, enums). Nenhum código em `src/` ou `tests/` depende disso.
+- Validação manual e aceite: pendentes.

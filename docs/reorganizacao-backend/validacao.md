@@ -1,6 +1,6 @@
 # Validação — Reorganização dos arquivos do backend
 
-Status: **em andamento** (linha de base registrada; tarefa 01 executada).
+Status: **em andamento** (linha de base registrada; tarefas 01 e 02 executadas).
 
 Plano: [plano.md](plano.md) · Explicação: [explicacao.md](explicacao.md) · Pedido: [task.md](task.md) · Sequência e portão decididos em: [decisão 05](decisoes/05-sequencia-migracao.md).
 
@@ -180,7 +180,7 @@ A suíte, o `ruff`, o `lint-imports` e o OpenAPI não foram executados nesta eta
 | Tarefa | OpenAPI (`cmp`) | Reexportação | `pytest` | `ruff` | `lint-imports` | Teto | `explicacao.md` | Status |
 |---|---|---|---|---|---|---|---|---|
 | [01](tarefas/01-domain-prova.md) | igual | 13/0 falhas | 323 passed | ok | 3 kept | 215 máx. | corrigida | concluida |
-| [02](tarefas/02-domain-classificacao.md) | — | — | — | — | — | — | — | pendente |
+| [02](tarefas/02-domain-classificacao.md) | igual | 6/0 falhas | 323 passed | ok | 3 kept | 270 máx. | corrigida | aguardando aceite |
 | [03](tarefas/03-domain-avaliacao.md) | — | — | — | — | — | — | não se aplica | pendente |
 | [04](tarefas/04-application-questoes.md) | — | — | — | — | — | — | — | pendente |
 | [05](tarefas/05-application-classificacao.md) | — | — | — | — | — | — | — | pendente |
@@ -214,3 +214,23 @@ Executada em 2026-11-28 sobre o commit `eb32e4f`, em `backend/`, com `PORTAO` no
 | `git diff --exit-code HEAD -- src/domain/__init__.py src/domain/alertas_extracao.py tests/` | 0 | sem diferença |
 
 `docs/planejamento-inicial/explicacao.md:117` passou a citar `backend/src/domain/prova/alerta_extracao.py:23`, que é o início de `ALERTAS_ESTRUTURAIS`.
+
+### Tarefa 02
+
+Executada em 2026-11-28 sobre o commit `76b0cfb`, em `backend/`, com `PORTAO` no diretório temporário da sessão. O portão "antes" rodou com a árvore limpa. O worker, o reviewer de requisitos da iteração 2 e o victory auditor reexecutaram o portão "depois" cada um por conta própria, com os mesmos resultados.
+
+| Comando | Exit | Saída relevante |
+|---|---|---|
+| `git status --short` (antes) | 0 | vazio |
+| `openapi_export` antes | 0 | `openapi-antes.json` gravado (mesmo sha256 da tarefa 01) |
+| `verificar_reexportacao.py antes … src/domain/classificacao.py` | 0 | `6 nomes públicos gravados` |
+| `openapi_export` depois + `cmp` | 0 | sem diferença |
+| `verificar_reexportacao.py depois … domain.classificacao` | 0 | `6 esperados, 0 fora do pacote, 0 falhas` |
+| `uv run pytest` | 0 | `323 passed` |
+| `uv run ruff check .` | 0 | `All checks passed!` |
+| `uv run ruff format --check .` | 0 | `129 files already formatted` |
+| `uv run lint-imports` | 0 | `Contracts: 3 kept, 0 broken.` |
+| `wc -l src/domain/classificacao/*.py` | 0 | 270, 253, 112, 21 (`execucao`, `classificacao`, `perfil`, `__init__`) |
+| `git diff --exit-code HEAD -- src/domain/__init__.py tests/` | 0 | sem diferença |
+
+`docs/planejamento-inicial/explicacao.md:118` passou a citar `backend/src/domain/classificacao/classificacao.py:114` (`Classificacao.substituir_por_correcao`) e `:180` (a linha `origem=OrigemClassificacao.HUMANA,` de `criar_classificacao_humana`).

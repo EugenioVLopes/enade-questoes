@@ -1,6 +1,6 @@
 # Plano — Reorganização dos arquivos do backend
 
-Status: **em andamento** (1 de 11 tarefas concluídas).
+Status: **em andamento** (1 de 11 tarefas concluídas; 1 aguardando aceite).
 
 Pedido e regras do esforço: [task.md](task.md) · Mapa de decisões (5 de 5 tickets resolvidos): [mapa.md](mapa.md) · Organização-alvo e regras de import: [explicacao.md](explicacao.md) · Portão e evidências: [validacao.md](validacao.md).
 
@@ -26,7 +26,7 @@ Dividir os arquivos grandes de `backend/src/` em subpacotes por agregado ou recu
 | Nº | Tarefa | Camada | Commit | Status |
 |---|---|---|---|---|
 | 01 | [Dividir `domain/prova.py` em pacote](tarefas/01-domain-prova.md) | domain | `refactor(domain): dividir prova.py em pacote` | concluida |
-| 02 | [Dividir `domain/classificacao.py` em pacote](tarefas/02-domain-classificacao.md) | domain | `refactor(domain): dividir classificacao.py em pacote` | pendente |
+| 02 | [Dividir `domain/classificacao.py` em pacote](tarefas/02-domain-classificacao.md) | domain | `refactor(domain): dividir classificacao.py em pacote` | aguardando aceite |
 | 03 | [Dividir `domain/avaliacao.py` em pacote](tarefas/03-domain-avaliacao.md) | domain | `refactor(domain): dividir avaliacao.py em pacote` | pendente |
 | 04 | [Dividir `application/questoes.py` em pacote](tarefas/04-application-questoes.md) | application | `refactor(application): dividir questoes.py em pacote` | pendente |
 | 05 | [Dividir `application/classificacao.py` em pacote](tarefas/05-application-classificacao.md) | application | `refactor(application): dividir classificacao.py em pacote` | pendente |
