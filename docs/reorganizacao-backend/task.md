@@ -26,7 +26,7 @@
 ## Critérios de aceite deste planejamento
 
 - [x] Organização-alvo definida arquivo a arquivo para `domain/` ([decisão 01](decisoes/01-corte-domain.md)).
-- [ ] Organização-alvo definida arquivo a arquivo para `application/`.
+- [x] Organização-alvo definida arquivo a arquivo para `application/` ([decisão 02](decisoes/02-corte-application.md)).
 - [ ] Organização-alvo definida arquivo a arquivo para `infrastructure/`.
 - [ ] Organização-alvo definida arquivo a arquivo para `presentation/`.
 - [ ] Sequência de tarefas de migração definida, com portão de verificação por tarefa.
