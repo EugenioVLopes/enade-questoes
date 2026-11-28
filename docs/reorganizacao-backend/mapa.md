@@ -15,6 +15,8 @@ Especificação da organização-alvo dos arquivos de `backend/src/`, com as cam
 
 <!-- uma linha por ticket resolvido -->
 
+- [Definir o corte dos arquivos de `domain/`](decisoes/01-corte-domain.md): `classificacao.py`, `prova.py` e `avaliacao.py` viram pacotes (3, 5 e 2 submódulos), os validadores privados ficam no submódulo que os usa ou em `_validacao.py` do pacote, e os demais arquivos de `domain/`, incluindo `__init__.py` e `alertas_extracao.py`, ficam como estão.
+
 ## Not yet specified
 
 - Nenhuma névoa identificada além dos tickets abertos. Se um corte revelar acoplamento que impeça mover código sem mudar design (por exemplo, import circular entre submódulos), registrar aqui.

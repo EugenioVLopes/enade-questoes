@@ -25,7 +25,7 @@
 
 ## Critérios de aceite deste planejamento
 
-- [ ] Organização-alvo definida arquivo a arquivo para `domain/`.
+- [x] Organização-alvo definida arquivo a arquivo para `domain/` ([decisão 01](decisoes/01-corte-domain.md)).
 - [ ] Organização-alvo definida arquivo a arquivo para `application/`.
 - [ ] Organização-alvo definida arquivo a arquivo para `infrastructure/`.
 - [ ] Organização-alvo definida arquivo a arquivo para `presentation/`.
