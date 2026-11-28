@@ -1,6 +1,6 @@
 # 15 — Validação ponta a ponta em provas reais (2017/2019/2023), `validacao.md` e guia local
 
-Status: `pendente`
+Status: `em andamento`
 
 Plano: [plano.md](../plano.md) · Pedido: [task.md](../task.md) · Explicação: [explicacao.md](../explicacao.md) · Mapa: [mapa.md](../mapa.md)
 

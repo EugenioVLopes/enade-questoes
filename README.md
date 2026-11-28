@@ -8,22 +8,21 @@ O backend em Python (FastAPI) e o frontend em React (Vite e TypeScript) entregam
 
 - **Ingestão de Provas e Gabaritos.** Extração de Questões, Alternativas, Ativos Visuais e Alertas de Extração a partir de PDFs usando Docling e `pdfplumber`, com suporte a reprocessamento e atualização independente do Gabarito.
 - **Taxonomias e Perfis de Classificação.** Cadastro de múltiplas Taxonomias, gerenciamento e arquivamento de Disciplinas, versionamento de Perfis de Classificação e execução assíncrona de classificações em um worker local.
-- **Classificação multimodal com travas determinísticas.** Integração com provedores compatíveis com a API OpenAI (Google Gemini por padrão) usando cache local por hash SHA-256, controle de taxa, validação de domínio e priorização de itens incertos.
-- **Consulta de Questões.** Busca textual híbrida no PostgreSQL (`TSVECTOR` combinado com `pg_trgm`) e filtros por Prova, Taxonomia, Disciplina, estado de revisão, confiança e alertas.
-- **Revisão humana e Divergências de Reclassificação.** Interface dividida com renderização de Markdown e KaTeX, atalhos de teclado, histórico de classificações, aprovação condicional e resolução de divergências sem perder o histórico revisado.
-- **Edição de conteúdo, Ativos Visuais, conferência de PDF e alertas na Revisão.** Modo sob demanda para editar enunciado (`Editar / Preview` em Markdown GFM e KaTeX), Alternativas `A`–`E` e Gabarito individual, gerenciar Ativos Visuais manualmente (upload, substituição, reordenação, vínculo e exclusão), visualizar páginas originais do PDF, confirmar alertas de inspeção (`pdf_via_ocr` e `fonte_symbol_detectada`) e disparar reclassificação individual explícita.
+- **Classificação multimodal com travas determinísticas.** Integração com provedores compatíveis com a API OpenAI (Google Gemini por padrão) usando cache local por hash SHA-256, controle de taxa, validação de domínio e priorização de Questões incertas.
+- **Consulta de Questões.** Busca textual híbrida no PostgreSQL (`TSVECTOR` combinado com `pg_trgm`) e filtros por Prova, Taxonomia, Disciplina, estado de revisão, Divergência, Situação do Gabarito e alertas. A confiança da IA não é filtro: ela ordena a fila de Pendentes da Revisão quando há Taxonomia ativa.
+- **Revisão humana e Divergências de Reclassificação.** Interface dividida com renderização de Markdown e KaTeX, atalhos de teclado, histórico de classificações, veredito por *Aprovar sugestão*, *Corrigir e aprovar* (Classificação pendente de revisão) ou *Salvar classificação* (demais casos) e resolução de divergências sem perder o histórico revisado.
+- **Edição de conteúdo, Ativos Visuais, conferência de PDF e alertas na Revisão.** Modo sob demanda para editar enunciado (`Editar / Preview` em Markdown GFM e KaTeX), Alternativas `A`–`E` e Gabarito individual, gerenciar Ativos Visuais manualmente (upload, substituição, reordenação, vínculo e exclusão), visualizar páginas originais do PDF, confirmar Alertas de Extração (`pdf_via_ocr` e `fonte_symbol_detectada`) e disparar reclassificação individual explícita.
 - **Avaliação offline (`enade-eval`), Conjunto-Ouro e histórico IA × Humano.** CLI somente-leitura no PostgreSQL para exportar snapshots de Conjunto-Ouro (`exportar-ouro`), executar avaliações com checagem *preflight* e métricas em 3 camadas (`avaliar`), validar regressões com gate híbrido (`comparar`) e consultar concordância entre predições da IA e revisões humanas (`historico`).
-
-Recursos ainda planejados para a próxima entrega do projeto: relatório de validação ponta a ponta em provas reais (tarefa 15).
 
 ## Pré-requisitos
 
 Instale as ferramentas abaixo antes de subir o ambiente local:
 
 - Python 3.13 e `uv`
-- Node.js 22 ou superior e `pnpm` (`pnpm@12.21.0` configurado em `frontend/package.json`)
+- Node.js (versão LTS recente recomendada; o repositório não fixa a versão do Node) e `pnpm` (`pnpm@12.21.0` fixado em `packageManager` no `frontend/package.json`)
 - Docker e Docker Compose (para o PostgreSQL 16)
 - Uma chave de API do Google AI Studio (`GEMINI_API_KEY`) ou um endpoint compatível com a API OpenAI que suporte entrada multimodal
+- Opcional, para ingestão real e testes `enade_real`: os PDFs oficiais do Enade em `data/enade/{2017,2019,2023}/` (a pasta `data/` não é versionada; sem os PDFs, esses testes são ignorados com skip)
 
 ## Como executar localmente
 
@@ -92,22 +91,26 @@ Para trocar o Gemini por um servidor local compatível com OpenAI (como vLLM com
 
 Execute os comandos abaixo a partir da raiz do repositório:
 
-| Comando             | Ação                                                                              |
-| ------------------- | --------------------------------------------------------------------------------- |
-| `make db-up`        | Sobe o container do PostgreSQL 16 e aguarda o healthcheck.                        |
-| `make db-down`      | Para e remove os containers definidos em `compose.yaml`.                          |
-| `make migrate`      | Executa `alembic upgrade head` no backend.                                        |
-| `make seed`         | Popula a Taxonomia padrão e o Perfil de Classificação inicial.                    |
-| `make dev-backend`  | Sobe o FastAPI com reload em `127.0.0.1:8000`.                                    |
-| `make dev-frontend` | Sobe o Vite em `127.0.0.1:5173`.                                                  |
-| `make dev`          | Executa `dev-backend` e `dev-frontend` em paralelo.                               |
-| `make lint`         | Executa `ruff check`, `ruff format --check`, `lint-imports`, `tsc -b` e `eslint`. |
-| `make test`         | Executa `pytest` no backend e `vitest run` no frontend.                           |
+| Comando              | Ação                                                                              |
+| -------------------- | --------------------------------------------------------------------------------- |
+| `make db-up`         | Sobe o container do PostgreSQL 16 e aguarda o healthcheck.                        |
+| `make db-down`       | Para e remove os containers definidos em `compose.yaml`.                          |
+| `make migrate`       | Executa `alembic upgrade head` no backend.                                        |
+| `make seed`          | Popula a Taxonomia padrão e o Perfil de Classificação inicial.                    |
+| `make dev-backend`   | Sobe o FastAPI com reload em `127.0.0.1:8000` (ver aviso).                        |
+| `make dev-frontend`  | Sobe o Vite em `127.0.0.1:5173`.                                                  |
+| `make dev`           | Executa `dev-backend` e `dev-frontend` em paralelo.                               |
+| `make lint`          | Executa `ruff check`, `ruff format --check`, `lint-imports`, `tsc -b` e `eslint`. |
+| `make test`          | Executa `pytest` no backend e `vitest run` no frontend.                           |
 | `make types`         | Exporta o esquema OpenAPI do backend e regenera `frontend/src/api/schema.d.ts`.   |
-| `make golden-export` | Exporta o Conjunto-Ouro da Taxonomia (`TAXONOMIA`, `SAIDA`) para JSON versionado. |
+| `make golden-export` | Exporta o Conjunto-Ouro da Taxonomia (`TAXONOMIA`, `SAIDA`) para JSON.            |
 | `make eval-run`      | Executa avaliação offline (`OURO`, `PERFIL`, `EVAL_ARGS`) sem gravar no banco.    |
 | `make eval-compare`  | Compara dois relatórios (`BASELINE`, `CANDIDATO`, `MODO_MIGRACAO=1`) via gate.    |
 | `make eval-history`  | Exibe métricas históricas de concordância IA × Humano (`TAXONOMIA`).              |
+
+Aviso: o `--reload` de `make dev-backend` reinicia o servidor a cada alteração de código, e o reinício marca como `interrompida` a Ingestão ou a Execução de Classificação em andamento (`backend/src/application/worker.py:217-228`). Para ingerir Provas reais, suba o backend sem reload: `cd backend && uv run uvicorn presentation.main:app --host 127.0.0.1 --port 8000`.
+
+`make test` exige o PostgreSQL ativo (`make db-up`): os testes de integração criam automaticamente o banco `<POSTGRES_DB>_test` (por padrão `enade_questoes_test`), recriando-o a cada execução.
 
 Para rodar apenas os testes unitários do backend sem depender do banco de dados nem de chaves de API, execute:
 
@@ -116,6 +119,8 @@ cd backend && uv run pytest tests/unit -q
 ```
 
 ## Arquitetura e estrutura do repositório
+
+Fluxo resumido da ingestão: a API (FastAPI) recebe os PDFs, grava a Ingestão no PostgreSQL e enfileira a tarefa; o worker local, uma thread dentro do processo da API, executa o Docling em subprocesso isolado, aplica o pós-processamento e a extração do Gabarito no próprio processo e, se solicitado, chama o LLM com cache local por hash. Questões e metadados ficam no PostgreSQL; PDFs, imagens, cache e relatórios ficam em `DATA_DIR`.
 
 O backend segue arquitetura hexagonal, com fronteiras de importação verificadas automaticamente por `import-linter` (configurado em `backend/pyproject.toml`). O frontend consome tipos gerados a partir do esquema OpenAPI do backend.
 
@@ -135,11 +140,35 @@ enade-questoes/
 │       ├── app/                 # Shell global e roteamento
 │       ├── components/          # Primitivos UI (Radix e Tailwind) e renderização Markdown
 │       └── features/            # Seções Provas, Taxonomias, Questões e Revisão
+├── data/                        # PDFs oficiais e DATA_DIR local (não versionados)
 ├── docs/planejamento-inicial/   # Plano, decisões arquiteturais e tarefas do projeto
+├── prototypes/                  # Protótipos descartáveis de extração e classificação
 ├── compose.yaml                 # PostgreSQL 16 local
 ├── GLOSSARY.md                  # Vocabulário canônico do domínio
 └── Makefile                     # Comandos de desenvolvimento, testes e geração de tipos
 ```
+
+## Avaliação offline com `enade-eval`
+
+O CLI `enade-eval` lê o PostgreSQL em modo somente leitura e grava apenas arquivos: em `DATA_DIR`, exceto `exportar-ouro` sem `--saida` (ver abaixo). Rode-o a partir da raiz do repositório, com o `.env` configurado e o banco ativo:
+
+```bash
+# Exporta o Conjunto-Ouro (Classificações aprovadas) de uma Taxonomia
+uv run --project backend enade-eval exportar-ouro --taxonomia enade-eng-computacao --saida data/app/evals/golden/enade-eng-computacao.json
+
+# Avalia um Perfil contra o Conjunto-Ouro (perfil padrão do seed: v2-fronteiras@v1)
+uv run --project backend enade-eval avaliar --ouro data/app/evals/golden/enade-eng-computacao.json --perfil v2-fronteiras@v1
+
+# Compara dois relatórios; termina com exit 1 quando o gate reprova, por regressão ou por piso estrutural (use --modo-migracao para troca de modelo ou provedor)
+uv run --project backend enade-eval comparar <baseline.json> <candidato.json>
+
+# Consulta a concordância histórica IA x Humano
+uv run --project backend enade-eval historico --taxonomia enade-eng-computacao
+```
+
+Os relatórios de `avaliar` são gravados em `DATA_DIR/evals/<timestamp>_<taxonomia>_<perfil>@<versao>_<modelo>.json` e `.md`. Os alvos `make golden-export`, `make eval-run`, `make eval-compare` e `make eval-history` encapsulam os mesmos comandos.
+
+Sem `--saida`, `exportar-ouro` grava em `evals/golden/<taxonomia>.json` relativo ao diretório atual, ou seja, `evals/` na raiz do repositório, que não é ignorado pelo Git. Para manter o Conjunto-Ouro fora do Git, use `make golden-export SAIDA=data/app/evals/golden/enade-eng-computacao.json` (`data/` é ignorado).
 
 ## Documentação adicional
 
@@ -147,3 +176,6 @@ enade-questoes/
 - [docs/planejamento-inicial/plano.md](docs/planejamento-inicial/plano.md): plano técnico completo e divisão das tarefas.
 - [docs/planejamento-inicial/explicacao.md](docs/planejamento-inicial/explicacao.md): contexto de arquitetura e decisões de desenho do sistema.
 - [docs/planejamento-inicial/mapa.md](docs/planejamento-inicial/mapa.md): índice das decisões e investigações da fase de planejamento.
+- [docs/planejamento-inicial/validacao.md](docs/planejamento-inicial/validacao.md): evidências da validação ponta a ponta em provas reais e pendências de aceite manual.
+- [docs/planejamento-inicial/decisoes/](docs/planejamento-inicial/decisoes/): tickets de decisão e investigação.
+- [docs/planejamento-inicial/tarefas/](docs/planejamento-inicial/tarefas/): tarefas de implementação e suas evidências.
